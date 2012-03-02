@@ -1,0 +1,10 @@
+#command
+\    select-toggle-one
+*    select-toggle-all
+#    select-unselect-all
+\r   select-only-quit
+\n   select-only-quit
+\e\e quit
+#env
+LESSSECURE=
+LESS=

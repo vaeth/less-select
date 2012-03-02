@@ -1,0 +1,840 @@
+--- cmd.h
++++ cmd.h
+@@ -66,6 +66,13 @@
+ #define	A_NEXT_TAG		53
+ #define	A_PREV_TAG		54
+ 
++#ifndef NOSELECT
++#define A_SEL_SINGLE		70
++#define A_SEL_ALL		71
++#define A_SEL_DEL		72
++#define A_SEL_ONLY		73
++#endif
++
+ #define	A_INVALID		100
+ #define	A_NOACTION		101
+ #define	A_UINVALID		102
+--- command.c
++++ command.c
+@@ -20,6 +20,7 @@
+ #include "position.h"
+ #include "option.h"
+ #include "cmd.h"
++#include "select.h"
+ 
+ extern int erase_char, erase2_char, kill_char;
+ extern int sigs;
+@@ -975,6 +976,16 @@
+ 		if (action != A_PREFIX)
+ 			cmd_reset();
+ 
++#ifndef NOSELECT
++		/*
++		 * In select mode, we always *force* line forward
++                 */
++		if(doselect)
++		{
++			if(action == A_F_LINE)
++				action = A_FF_LINE;
++		}
++#endif
+ 		switch (action)
+ 		{
+ 		case A_DIGIT:
+@@ -1205,6 +1216,39 @@
+ 			dispversion();
+ 			break;
+ 
++#ifndef NOSELECT
++		case A_SEL_SINGLE:
++			if (doselect)
++			{
++				if(number<=0)
++					number=1;
++				cmd_exec();
++				toggle_cmd(number,0);
++			}
++			break;
++		case A_SEL_ALL:
++			if (doselect)
++			{
++				cmd_exec();
++				toggle_all();
++				repaint();
++			}
++			break;
++		case A_SEL_DEL:
++			if (doselect)
++			{
++				cmd_exec();
++				unselect();
++				repaint();
++			}
++			break;
++		case A_SEL_ONLY:
++			if (!doselect)
++				break;
++			cmd_exec();
++			sel_only();
++			/* Fallthrough */
++#endif
+ 		case A_QUIT:
+ 			/*
+ 			 * Exit.
+--- decode.c
++++ decode.c
+@@ -78,6 +78,12 @@
+ 	'z',0,				A_F_WINDOW,
+ 	'w',0,				A_B_WINDOW,
+ 	ESC,' ',0,			A_FF_SCREEN,
++#ifndef NOSELECT
++	'*',0,				A_SEL_SINGLE,
++	'a',0,				A_SEL_ALL,
++	'#',0,				A_SEL_DEL,
++	'.',0,				A_SEL_ONLY,
++#endif
+ 	'F',0,				A_F_FOREVER,
+ 	'R',0,				A_FREPAINT,
+ 	'r',0,				A_REPAINT,
+--- edit.c
++++ edit.c
+@@ -10,6 +10,7 @@
+ 
+ 
+ #include "less.h"
++#include "select.h"
+ 
+ public int fd0 = 0;
+ 
+@@ -229,6 +230,16 @@
+ 	 * {{ Some stupid implementations of popen() mess up if you do:
+ 	 *    fA = popen("A"); fB = popen("B"); pclose(fA); pclose(fB); }}
+ 	 */
++#ifndef NOSELECT
++	if (select_option)
++	{
++		do_select_rest();
++		if ((ifile != NULL_IFILE) && get_index(ifile)==1)
++			doselect=TRUE;
++		else
++			doselect=FALSE;
++	}
++#endif
+ #if LOGFILE
+ 	end_logfile();
+ #endif
+--- less.hlp
++++ less.hlp
+@@ -25,6 +25,12 @@
+   r  ^R  ^L            Repaint screen.
+   R                    Repaint screen, discarding buffered input.
+         ---------------------------------------------------
++        Special keys in select-mode (option -Y/Z):
++  *                 *  Select/Deselect top line of the screen.
++  a                    Select/Deselect (toggling) all lines.
++  #                    Deselect all lines.
++  .                    If something is selected, quit. Otherwise select & quit.
++        ---------------------------------------------------
+         Default "window" is the screen height.
+         Default "half-window" is half of the screen height.
+  ---------------------------------------------------------------------------
+@@ -187,6 +193,8 @@
+                   Forward scroll limit.
+   -z [_N]  ....  --window=[_N]
+                   Set size of window.
++  -Y [_f_i_l_e] --select=[_f_i_l_e]
++                  Selection mode.
+   -" [_c[_c]]  .  --quotes=[_c[_c]]
+                   Set shell quote characters.
+   -~  ........  --tilde
+--- lesskey.c
++++ lesskey.c
+@@ -141,6 +141,12 @@
+ 	{ "reverse-search",	A_REVERSE_SEARCH },
+ 	{ "reverse-search-all",	A_T_REVERSE_SEARCH },
+ 	{ "right-scroll",	A_RSHIFT },
++#ifndef NOSEL
++	{ "select-toggle-one",	A_SEL_SINGLE },
++	{ "select-toggle-all",	A_SEL_ALL },
++	{ "select-unselect-all",A_SEL_DEL },
++	{ "select-only-quit",	A_SEL_ONLY },
++#endif
+ 	{ "set-mark",		A_SETMARK },
+ 	{ "shell",		A_SHELL },
+ 	{ "status",		A_STAT },
+--- lesskey.nro
++++ lesskey.nro
+@@ -166,6 +166,10 @@
+ 	r		repaint 
+ 	^R		repaint 
+ 	^L		repaint 
++	*		select-toggle-one
++	a		select-toggle-all
++	#		select-unselect-all
++	.		select-only-quit
+ 	\eeu		undo-hilite
+ 	g		goto-line 
+ 	\ekh	goto-line
+--- less.nro
++++ less.nro
+@@ -18,6 +18,8 @@
+ .br
+ .B "     [\-T \fItagsfile\fP] [\-x \fItab\fP,...] [\-y \fIlines\fP] [\-[z] \fIlines\fP]"
+ .br
++.B "     [-Y \fIselect-file\fP]"
++.br
+ .B "     [\-# \fIshift\fP] [+[+]\fIcmd\fP] [\-\-] [\fIfilename\fP]..."
+ .br
+ (See the OPTIONS section for alternate option syntax with long option names.)
+@@ -360,7 +362,6 @@
+ .I less.
+ .PP
+ The following 
+-four
+ commands may or may not be valid, depending on your particular installation.
+ .PP
+ .IP v
+@@ -389,6 +390,15 @@
+ .IP "s filename"
+ Save the input to a file.
+ This only works if the input is a pipe, not an ordinary file.
++.IP "*"
++In selection-mode (-Y), this selects/deselects the first line on the screen.
++.IP "a"
++In selection-mode (-Y), this selects/deselects (toggling) all lines.
++.IP "#"
++In selection-mode (-Y), this deselects all lines.
++.IP "."
++In selection-mode (-Y): If something is selected, quit. Otherwise select
++the first line on the screen and quit.
+ .PP
+ .SH OPTIONS
+ Command line options are described below.
+@@ -795,6 +805,14 @@
+ The \-c or \-C option may be used to repaint from the top of
+ the screen if desired.
+ By default, any forward movement causes scrolling.
++.IP "-Y\fIfilename\fP or --select=\fIfilename\fP"
++Causes
++.I less
++to allow the user to select lines.
++The line numbers are output (in the selected order) into the file.
++If the file already exists, 
++.I less
++will ask for confirmation before overwriting it.
+ .IP "\-[z]\fIn\fP or \-\-window=\fIn\fP"
+ Changes the default scrolling window size to \fIn\fP lines.
+ The default is one screenful.
+--- line.c
++++ line.c
+@@ -16,6 +16,8 @@
+  */
+ 
+ #include "less.h"
++#include "select.h"
++
+ 
+ public char *linebuf = NULL;	/* Buffer which holds the current output line */
+ static char *attr = NULL;	/* Extension of linebuf to hold attributes */
+@@ -142,7 +144,11 @@
+ 	register LINENUM linenum = 0;
+ 	register int i;
+ 
++#ifndef NOSELECT
++	if (doselect || (linenums == OPT_ONPLUS))
++#else
+ 	if (linenums == OPT_ONPLUS)
++#endif
+ 	{
+ 		/*
+ 		 * Get the line number and put it in the current line.
+@@ -169,6 +175,37 @@
+ 		curr++;
+ 		column++;
+ 	}
++#ifndef NOSELECT
++	if(doselect)
++	{
++		i=selected(linenum);
++		if (linenums != OPT_ONPLUS)
++		{
++			column += SELECT_WIDTH;
++			if(i)
++                        {
++				sprintf(&linebuf[curr], "%*d", SELECT_WIDTH, i);
++				for (i = 0;  i < SELECT_WIDTH;  i++)
++					attr[curr++] = 0;
++			}
++			else
++                        {
++				column += SELECT_WIDTH;
++				for (i = 0;  i < SELECT_WIDTH;  i++)
++					linebuf[curr] = ' ', attr[curr++] = 0;
++			}
++		}
++		else
++		{
++			if(i)
++				linebuf[curr] = '*';
++			else
++				linebuf[curr] = ' ';
++			attr[curr++] = 0;
++			column ++;
++		}
++	}
++#endif
+ 	/*
+ 	 * Display the line number at the start of each line
+ 	 * if the -N option is set.
+--- main.c
++++ main.c
+@@ -14,6 +14,7 @@
+  */
+ 
+ #include "less.h"
++#include "select.h"
+ #if MSDOS_COMPILER==WIN32C
+ #include <windows.h>
+ #endif
+@@ -370,6 +371,9 @@
+ 		save_status = status;
+ 	quitting = 1;
+ 	edit((char*)NULL);
++#ifndef NOSELECT
++	select_write();
++#endif
+ 	save_cmdhist();
+ 	if (any_display && is_tty)
+ 		clear_bot();
+--- Makefile.aut
++++ Makefile.aut
+@@ -13,7 +13,7 @@
+ 	command.c decode.c edit.c filename.c forwback.c \
+ 	help.c ifile.c input.c jump.c line.c linenum.c \
+ 	lsystem.c mark.c optfunc.c option.c opttbl.c os.c \
+-	output.c position.c prompt.c search.c signal.c \
++	output.c position.c prompt.c search.c select.c signal.c \
+ 	tags.c ttyin.c version.c  
+ DISTFILES_W = \
+ 	defines.ds  Makefile.dsb Makefile.dsg Makefile.dsu \
+@@ -21,7 +21,7 @@
+ 	defines.o9  Makefile.o9c Makefile.o9u \
+ 	defines.wn  Makefile.wnm Makefile.wnb
+ DISTFILES = \
+-	${SRC} regexp.c regexp.h \
++	${SRC} select.h regexp.c regexp.h \
+ 	COPYING INSTALL LICENSE Makefile.in Makefile.aut NEWS README \
+ 	configure configure.ac lesskey.c lessecho.c scrsize.c \
+ 	cmd.h funcs.h lglob.h less.h lesskey.h option.h pckeys.h position.h \
+--- Makefile.dsb
++++ Makefile.dsb
+@@ -22,7 +22,7 @@
+ 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
+ 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
+ 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
+-	position.obj prompt.obj search.obj signal.obj tags.obj \
++	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
+ 	ttyin.obj version.obj
+ 
+ all: less$(EXT) lesskey$(EXT)
+--- Makefile.dsg
++++ Makefile.dsg
+@@ -37,8 +37,8 @@
+ 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+ 	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
+ 	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
+-	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	tags.${O} ttyin.${O} version.${O}
++	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
++	signal.${O} tags.${O} ttyin.${O} version.${O}
+ 
+ all: less lesskey lessecho
+ 
+--- Makefile.dsu
++++ Makefile.dsu
+@@ -31,7 +31,7 @@
+ 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
+ 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
+ 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
+-	position.obj prompt.obj search.obj signal.obj tags.obj \
++	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
+ 	ttyin.obj version.obj
+ 
+ all: less lesskey
+--- Makefile.in
++++ Makefile.in
+@@ -43,8 +43,8 @@
+ 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+ 	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
+ 	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
+-	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	tags.${O} ttyin.${O} version.${O}  @REGEX_O@
++	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
++	signal.${O} tags.${O} ttyin.${O} version.${O}  @REGEX_O@
+ 
+ all: less lesskey lessecho
+ 
+--- Makefile.o2e
++++ Makefile.o2e
+@@ -22,8 +22,8 @@
+ 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+ 	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
+ 	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
+-	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	tags.${O} ttyin.${O} version.${O}  regexp.${O}
++	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
++	signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
+ 
+ all:    less.exe lesskey.exe scrsize.exe
+ 
+--- Makefile.o9c
++++ Makefile.o9c
+@@ -26,8 +26,8 @@
+ 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+ 	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
+ 	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
+-	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	tags.${O} ttyin.${O} version.${O}  regexp.${O}
++	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
++	signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
+ 
+ all: less lessecho lesskey
+ 
+--- Makefile.o9u
++++ Makefile.o9u
+@@ -25,8 +25,8 @@
+ 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+ 	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
+ 	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
+-	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	tags.${O} ttyin.${O} version.${O}  regexp.${O}
++	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
++	signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
+ 
+ all: less lesskey
+ 
+--- Makefile.wnb
++++ Makefile.wnb
+@@ -29,7 +29,7 @@
+ 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
+ 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
+ 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
+-	position.obj prompt.obj search.obj signal.obj tags.obj \
++	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
+ 	ttyin.obj version.obj regexp.obj
+ 
+ all: less lesskey lessecho
+--- Makefile.wnm
++++ Makefile.wnm
+@@ -27,7 +27,7 @@
+ 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
+ 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
+ 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
+-	position.obj prompt.obj search.obj signal.obj tags.obj \
++	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
+ 	ttyin.obj version.obj regexp.obj
+ 
+ all: less.exe lesskey.exe
+--- opttbl.c
++++ opttbl.c
+@@ -15,6 +15,7 @@
+ 
+ #include "less.h"
+ #include "option.h"
++#include "select.h"
+ 
+ /*
+  * Variables controlled by command line options.
+@@ -105,6 +106,9 @@
+ static struct optname X__optname     = { "no-init",              NULL };
+ static struct optname y_optname      = { "max-forw-scroll",      NULL };
+ static struct optname z_optname      = { "window",               NULL };
++#ifndef NOSELECT
++static struct optname Y_optname      = { "select",               NULL };
++#endif
+ static struct optname quote_optname  = { "quotes",               NULL };
+ static struct optname tilde_optname  = { "tilde",                NULL };
+ static struct optname query_optname  = { "help",                 NULL };
+@@ -389,6 +393,13 @@
+ 			NULL
+ 		}
+ 	},
++#ifndef NOSELECT
++	{ 'Y', &Y_optname,
++		STRING, 0, NULL, opt_select,
++		"Allow to select linenumbers and output them to file: ",
++		NULL, NULL
++	},
++#endif
+ 	{ 'z', &z_optname,
+ 		NUMBER, -1, &swindow, NULL,
+ 		{
+--- select.c
++++ select.c
+@@ -0,0 +1,342 @@
++
++#ifndef NOSELECT
++
++#include "less.h"
++#include "option.h"
++#include "position.h"
++
++
++extern int secure;
++extern int sigs;
++
++public int select_option=FALSE;	/* Is selection option activated?	*/
++public int doselect=FALSE;	/* And in the current file, too?      	*/
++
++static char *select_file;
++
++/* The following variables are somewhat tricky:
++ * There's there problem that a 'toggle_all'-command should toggle also that
++ * lines that have not even been read (we do not know the number of lines yet!)
++ * For this reason, we have to remember the `highest selected line' in
++ * select_from. We may not forget to read the rest of the file before closing
++ * to mark the remaining selected lines.
++ */
++
++static int select_rest=FALSE;	/* TRUE means: select all lines>select_from, */
++static int select_from;		/* although these lines are not in list	     */
++static int max_lno=0;		/* Number of lines already read              */
++
++struct selstruct
++{
++	struct selstruct * sl_next;
++	int sl_lno;
++};
++static struct selstruct sel_anchor = { NULL };
++
++/* The following function just toggles the internal selection list */
++
++	public void
++toggle_select (lno)
++	int lno;
++{
++	struct selstruct *prev_sl=&sel_anchor;
++	struct selstruct *sl;
++
++	for(sl=prev_sl->sl_next ; sl !=NULL ; prev_sl=sl, sl=prev_sl->sl_next)
++	{
++		if( sl->sl_lno == lno )
++		{
++			prev_sl->sl_next=sl->sl_next;
++			free(sl);
++			return;
++		}
++	}
++	sl = (struct selstruct *) ecalloc(1, sizeof(struct selstruct));
++	sl->sl_next=NULL;
++	sl->sl_lno=lno;
++	prev_sl->sl_next=sl;
++}
++
++
++/* Returns selection-number of the line lno (0 if lno is not selected).
++ * Additionally, if lno is larger than previously largest selected lno,
++ * the toggle_list is updated.
++ * Since this function is called from forw_line() (via plinenum()),
++ * an repeated call of forw_line until EOI happens, will update the list
++ * in the end.
++ */
++
++	public int
++selected (lno)
++	int lno;
++{
++	register int i;
++	struct selstruct *sl;
++
++	if(lno>max_lno)
++		max_lno=lno;
++	if((select_rest>0) && (lno>select_from))
++	{
++		for(i=select_from+1 ; i<=lno ; i++)
++			toggle_select(i);
++		select_from=lno;
++	}
++	for(i=1, sl = sel_anchor.sl_next ; sl != NULL; sl = sl->sl_next, i++)
++		if( sl->sl_lno == lno )
++			return i;
++	return 0;
++}
++
++/*
++ * Just toggles internal list and flags.
++ */
++
++	public void
++toggle_all ()
++{
++	register int maxs;
++	register int i;
++	struct selstruct *sl;
++	for(maxs=0, sl=sel_anchor.sl_next; sl != NULL; sl=sl->sl_next)
++		if(sl->sl_lno > maxs)
++			maxs=sl->sl_lno;
++	for(i=1;i<=maxs;i++)
++		toggle_select(i);
++	if(select_rest)
++		select_rest=FALSE;
++	else
++		select_rest=TRUE, select_from=maxs;
++}
++
++/*
++ * Unselects everything (no new screendisply)
++ */
++	public void
++unselect ()
++{
++	struct selstruct *sl;
++	struct selstruct *nextsl;
++
++	for (sl = sel_anchor.sl_next;  sl != NULL;  sl = nextsl)
++	{
++		nextsl = sl->sl_next;
++		free((void*)sl);
++	}
++	sel_anchor.sl_next = NULL;
++	select_rest=FALSE;
++}
++
++/* Read until EOI and update selection list */
++
++	public void
++do_select_rest ()
++{
++	POSITION pos;
++
++	if(!select_rest)
++		return;
++	ierror("Updating selection list", NULL_PARG);
++	/*
++	 * {{ Maybe we could even use BOTTOM_PLUS_ONE, but then I'm not
++	 *  sure whether we really call forw_line() one time more than
++	 *  necessary (see next comment). This might happen in the special
++	 *  case that the bottom of the screen matches exactly EOI. }}
++	 */
++	pos=position(BOTTOM);
++	while(pos != NULL_POSITION)
++	{
++		pos=forw_line(pos);
++		if (ABORT_SIGS())
++			break;
++	}
++	select_rest=FALSE;
++	/*
++	 * There's a problem: The function forw_line() FIRST calls
++	 * plinenum() (and thus selected()) and THEN checks whether
++	 * EOI is reached. Therefore, we have `mistakenly' called selected()
++	 * with one linennumber too large.
++	 * {{ As a matter of fact, max_lno is just needed for this hack }}
++	 */
++	toggle_select(max_lno);
++}
++
++
++/*
++ * Maybe this should better be put into commands() (in file command.c):
++ * This is the front-end to the toggle_select command:
++ * n gives the number of lines to toggle.
++ * quitsoon TRUE means that no redraw is necessary anymore
++ */
++
++	public void
++toggle_cmd (n,quitsoon)
++	int n;
++	int quitsoon;
++{
++	register int i;
++	POSITION pos;
++	struct scrpos scrposs;
++
++	/*pos=position(TOP);*/
++	get_scrpos(&scrposs);
++	pos=scrposs.pos;
++	for(i=0 ;; )
++	{
++		if(pos == NULL_POSITION)
++			break;
++		toggle_select(find_linenum(pos));
++		(void) ch_seek(pos);
++		if(++i==n)
++			break;
++		pos=forw_line(pos);
++	}
++	if(quitsoon)
++		return;
++	repaint();
++	if(i>0)
++		forward(i, 1, 0);
++}
++
++/*
++ * If something is already selected, return. Otherwise select one item.
++ * Redraw is not necessary, since we are going to quit afterwards.
++ */
++
++	public void
++sel_only ()
++{
++	if (select_rest || sel_anchor.sl_next)
++		return;
++	toggle_cmd(1,TRUE);
++}
++
++/* Output selection list into select_file */
++
++	public void
++select_write ()
++{
++	char string[20];
++	register int handle;
++	int exists;
++	int answer;
++	PARG parg;
++	struct selstruct *sl;
++
++	if(!select_option)
++		return;
++	select_option=FALSE;
++	ierror("Writing selection", NULL_PARG);
++
++	/*
++	 * {{ We could use access() here. }}
++	 */
++	select_file = shell_unquote(select_file);
++	handle = open(select_file, OPEN_READ);
++	close(handle);
++	exists = (handle >= 0);
++
++	/*
++	 * Decide whether to overwrite the select-file.
++	 * If it doesn't exist we "overwrite" it.
++	 */
++	if (!exists)
++	{
++		/*
++		 * Overwrite (or create) the select-file.
++		 */
++		answer = 'O';
++	} else
++	{
++		/*
++		 * Ask user what to do.
++		 */
++		parg.p_string = select_file;
++		answer = query("Warning: \"%s\" exists; Overwrite or Don't modify?", &parg);
++	}
++
++answerloop:
++	switch (answer)
++	{
++	case 'O': case 'o':
++		/*
++		 * Overwrite: create the file.
++		 */
++		handle = creat(select_file, 0644);
++		break;
++	case 'q':
++	case 'D': case 'd':
++		/*
++		 * Don't do anything.
++		 */
++		free(select_file);
++		unselect();
++		return;
++	default:
++		/*
++		 * Eh?
++		 */
++		answer = query("Overwrite or Don't modify? (Type \"O\", \"D\", or \"q\") ", NULL_PARG);
++		goto answerloop;
++	}
++
++	if (handle < 0)
++	{
++		/*
++		 * Error in opening select_file.
++		 */
++		parg.p_string = select_file;
++		error("Cannot write to \"%s\"", &parg);
++		free(select_file);
++		unselect();
++		return;
++	}
++	for(sl=sel_anchor.sl_next ; sl !=NULL ; sl=sl->sl_next)
++	{
++		if (ABORT_SIGS())
++			break;
++		sprintf(string,"%d\n",sl->sl_lno);
++		if(write(handle, string, strlen(string))<0)
++			break;
++	}
++	close(handle);
++	free(select_file);
++	unselect();
++}
++
++/* Maybe this should be put into optfunc.c:
++ * Handler for the select option (read and store filename)
++ */
++	public void
++opt_select(type, s)
++	int type;
++	char *s;
++{
++	PARG parg;
++
++	if (secure)
++	{
++		error("Selection-file support is not available", NULL_PARG);
++		return;
++	}
++	switch (type)
++	{
++	case INIT:
++		select_file = s;
++		select_option=TRUE;
++		break;
++	case TOGGLE:
++		error("Selection-mode cannot be toggled", NULL_PARG);
++		break;
++	case QUERY:
++		if (!select_option)
++			error("No selection-file", NULL_PARG);
++		else
++		{
++			parg.p_string = shell_unquote(select_file);
++			error("Selection-file \"%s\"", &parg);
++			free(parg.p_string);
++		}
++	}
++}
++
++#endif
+--- select.h
++++ select.h
+@@ -0,0 +1,21 @@
++
++#ifndef NOSELECT
++
++#define SELECT_WIDTH    5       /* Chars to use for selection number         */
++
++extern int select_option;	/* Is selection-option activated?            */
++extern int doselect;		/* And in the current file, too?             */
++public int selected ();		/* Parameter: linenumber.                    */
++/*extern void toggle_select ();	 * Parameter: linenumber.                    */
++public void toggle_all ();
++public void unselect ();
++public void do_select_rest ();
++public void toggle_cmd ();	/* Parameter: number of lines, quit-soon-flag*/
++public void sel_only ();
++public void select_write ();
++public void opt_select ();
++public void opt_selecto ();
++
++
++
++#endif

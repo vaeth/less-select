@@ -1,0 +1,7 @@
+#! /bin/sh
+rm -f less.man lesskey.man help.c
+nroff -man less.nro >less.man
+nroff -man lesskey.nro >lesskey.man
+gcc -o mkhelp mkhelp.c
+./mkhelp <less.hlp >help.c
+rm -f mkhelp

@@ -1,0 +1,543 @@
+#!/usr/bin/perl
+use strict;
+use integer;
+use Pod::Usage;
+use Getopt::Long;
+
+sub version { '$Revision: 1.2 $ '=~ /Revision:\s([^\s]*)/;
+  print "less-select v$1 by Martin Väth\n"
+   .    "martin\@mvath.de\n" ; exit 0 }
+
+=head1 NAME
+
+less-select - select interactively files from a list to process them
+
+=head1 SYNOPSIS
+
+B<less-select> [options] [B<-->] I<command> I<args>
+
+or
+
+B<less-select> [options] [B<-->] I<command> I<args> B<@> I<selection list>
+
+One of the I<args> should be (or at least start with) the magic symbol B<@>.
+If one of the I<args> starts with B<->, then the B<--> is mandatory.
+
+Type B<less-select --man> for an extended help.
+
+=head1 DESCRIPTION
+
+In its simplest form, one of the arguments in I<args> is the magic symbol B<@>.
+Then a patched version of the B<less> program is used to display a list of
+all files in the current directory. Due to this patch (by
+Martin VE<auml>th E<lt>martin@mvath.deE<gt>)
+you are not only able to B<see> this list of files but even to B<select>
+some of these files (for a description how to select, see below).
+
+When you are done (i.e. when you quit B<less>) then I<command> I<args>
+is executed where the special argument B<@> within I<args> is replaced
+by many arguments, namely by the filenames that you have selected
+(in the order you selected them)
+
+Alternatively (if you use the B<-s> or B<-S> option) then I<command> I<args>
+is executed consecutively for each filename that you have selected where
+B<@> is replaced by that filename.
+
+If you do not want to allow selection of all files of the current directory
+but of all files which match a certain filemask, just replace the special
+argument B<@> (within I<args>) by the argument B<@>I<Filemask> (then you might
+have to quote this argument for the shell so that this argument is actually
+passed `as is').
+
+Sometimes it is reasonable to select not from a list of existing files but
+instead from an arbitrary list of data. For this purpose, there is a second
+form of call of B<less-select> where you append B<@> I<selection list>:
+Instead of the files in the current directory, the data
+in I<selection list> is displayed for selection.
+
+The keys that can be used for selection are determined by a lesskey file
+(created by the B<lesskey> tool). The first existing file in the following
+list is used:
+
+=over 8
+
+=item File(s) given by the B<--key> option (in reverse order)
+
+=item Content of environment-variable B<LESSSELECTKEY>
+
+=item F<$HOME/.less-select-key.bin>
+
+=item F</usr/local/etc/less-select-key.bin>
+
+=item F</etc/less-select.key>
+
+=item F</etc/less-select-key.bin>
+
+=back
+
+The default file (distributed with this program) contains the following keys:
+
+=over 8
+
+=item B<space>
+
+"select/unselect" the file on top of the screen
+
+=item B<return/enter>
+
+"quit and execute" (if nothing else was selected, the file on top of the
+screen is selected).
+
+=item B<*>
+
+Toggle all files (i.e. select all unselected files and vice versa)
+
+=item B<#>
+
+Unselect all files
+
+=back
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<--help> or B<-h>
+
+Display a brief help.
+
+=item B<--man> or B<-?>
+
+Display an extended help
+(depending on your perl installation usually as a manpage).
+
+=item B<--single> or B<-s> (switch)
+
+Execute I<command> consecutively for each selected file.
+
+=item B<--Single> or B<-S> (switch)
+
+Execute I<command> consecutively for each selected file, but stop processing
+if I<command> returns with a nonzero exit code.
+
+=item B<--visible> or <-v> (switch)
+
+List only non-hidden files.
+
+=item B<--all> or <-a> (switch)
+
+List also the files F<.> and F<..>
+
+=item B<--brief> or <-b> (switch)
+
+Show only the filenames in the listing, not the size and date of the files.
+
+=item B<--long> or <-l> (switch)
+
+Show more information on the files in the listing.
+
+=item B<--emptyrun> or <-e> (switch)
+
+Execute I<command> even if no file is selected.
+
+=item B<--path=>I<path> or B<-p> I<path> (switch)
+
+Do not display the files of the current directory but of the directory I<path>.
+Moreover, when executing I<command>, prepend I<path> in front of each
+selected filename.
+
+=item B<--sort=>[n|t|s|x|u] or B<-t> [n|t|s|x|u]
+
+Sort listing of files by name (n), time (t), size (s), extension (x)
+or unsorted (u). The default is x.
+
+=item B<--reverse> or B<-r> (switch)
+
+Reverse sorting of listing
+
+=item B<--critical=>I<char> or B<-c> I<char>
+
+Let the "critical" argument start with I<char> instead of B<@>.
+
+=item B<--number=>I<n> or B<-n> I<n> (switch)
+
+Magically insert B<@> as the I<n>-th word in the list "I<command> I<args>".
+(I<0> means the first word in this list).
+
+=item B<--key=>I<file> or B<-k>I<file>
+
+Use I<file> as F<.key>-file for less.
+
+=item B<--unquoted> or B<-u> (switch)
+
+Pass the filenames unquoted to I<command>.
+
+=item B<--numberpostpone> or B<-N> (switch)
+
+This is a very special options meant to simplify writing aliases.
+Essentially, this behaves like the option B<--number>, but the
+argument is not read immediately. Instead, the first non-option
+argument is interpreted as the argument.
+
+=item B<--pathpostpone> or B<-P> (switch)
+
+This is the analogon to B<--numberpostpone> for the B<--path> option.
+If this option is combined with --numberpostpone, the first two non-option
+arguments are used (the order of interpretation depends on the order
+of the options).
+
+=item B<--version> or B<-V>
+
+print version number
+
+=back
+
+The options marked with (switch) act also as switches, i.e. their negation
+(which is always the default) can be re-obtained be proceeding 'no' to
+the option. For example, B<--nosingle> cancels the effect of a previous
+option B<--single> or B<-s>.
+
+=head1 EXAMPLES OF USAGE
+
+=over 8
+
+=item B<less-select -s -- tar xf '*.tar'>
+
+Display a list of all F<*.tar> files in the current directory and untar
+each of the selected files.
+
+=item B<less-select -p ~/src/ cp '@*.c' .>
+
+Display a list of all F<*.c> files of F<~/src> and copy the selected files into
+the current directory.
+
+=item B<less-select cp @ ~/bin @ */*>
+
+Display a list of all files residing within one subdirectory of the current
+directory and copy the selected files into F<~/bin>.
+
+=item B<less-select cat @ 'E<gt>mergefile'>
+
+Concatenates all selected files into F<mergefile>. Note that the redirection
+is quoted, because we do not want to redirect the output of B<less-select>,
+but the output of the command B<cat>.
+
+=item B<less-select -n 3 -- cp -r -i ~/bin>
+
+Display a list of all files and copy the selected ones (using the B<cp>
+options <-r> and <-i>) into F<~/bin>. The B<--number> option is meant to
+be used together with some shell alias or function. For example, if you
+have the aliases
+
+=over 4
+
+=item B<alias sel='less-select -n 1 --'>
+
+=item B<alias sel2='less-select -n 2 --'>
+
+=item B<alias sel3='less-select -n 3 --'>
+
+=back
+
+then you can use (depending on the B<cp> options you want):
+
+=over 4
+
+=item B<sel cp ~/bin>
+
+=item B<sel2 cp -r ~/bin>
+
+=item B<sel3 cp -r -i ~/bin>
+
+=back
+
+=item B<selx 4 cp -r -i -l ~/bin>
+
+This extends the above commands provided that you have defined the alias
+
+=over 4
+
+=item B<alias selx='less-select -N --'>
+
+=back
+
+=item B<from /usr/bin cp .>
+
+=item B<from2 /usr/bin cp -r .>
+
+=item B<fromx 3 /usr/bin cp -r -i .>
+
+This allows to select files from F</usr/bin> and copies the selected files
+(with the corresponding B<cp> options) into the current directory.
+Here, it is assumed that you have defined the following aliases:
+
+=over 4
+
+=item B<alias from='less-select -P --'>
+
+=item B<alias from2='less-select -Pn2 --'>
+
+=item B<alias fromx='less-select -NP --'>
+
+=back
+
+=back
+
+=head1 AUTHOR
+
+Martin VE<auml>th E<lt>martin@mvath.deE<gt>
+
+=cut
+
+# Default for the options
+
+our @KEYFILE=('/etc/less-select-key.bin','/usr/local/etc/less-select-key.bin');
+if(exists($ENV{HOME}) && defined($ENV{HOME}) && ($ENV{HOME} ne ''))
+  { push @KEYFILE,"$ENV{HOME}/.less-select-key.bin" }
+if(exists($ENV{LESSSELECTKEY}))
+  { push @KEYFILE,$ENV{LESSSELECTKEY} }
+
+our $short='m';
+our $hidden='A';
+our $criticalc='@';
+our $sort='extension';
+our $single='';
+our $errorbreak='';
+our $numberarg='';
+our $critnum='';
+our $emptyrun='';
+our $withpath='';
+our $mypath='';
+our $reverse='';
+our $quote="\'";
+
+# Parse Options:
+
+our @POSTPONE=();
+sub postpone { my($a)=@_;
+  foreach (@POSTPONE) { if($_ eq $a) { return } }; push @POSTPONE,$a }
+sub unpostpone { my($a)=@_;
+  foreach (@POSTPONE) { if($_ eq $a) { $_=''; last } } }
+
+$Getopt::Long::bundling=1;
+GetOptions(
+  'help|h', sub { pod2usage(1) },
+  'man|?', sub { pod2usage(-verbose=>2) },
+  'version|V', \&version,
+  'single|s', sub { $single=1; $errorbreak='' },
+  'nosingle|nos', sub { $single='' },
+  'Single|S', sub { $single=$errorbreak=1 },
+  'noSingle|noS', sub { $single=$errorbreak='' },
+  'brief|b', sub { $short='s' },
+  'nolong|nobrief|nol|nob', sub { $short='m' },
+  'long|l', sub { $short='L' },
+  'visible|v', sub { $hidden='' },
+  'all|a', sub { $hidden='a' },
+  'novisible|noall|nov|noa', sub { $hidden='A' },
+  'emptyrun|e', sub { $emptyrun=1 },
+  'noemptyrun|noe', sub { $emptyrun='' },
+  'unquoted|u', sub { $quote='' },
+  'nounquoted|nou', sub { $quote="\'" },
+  'path|p=s', sub { (undef,$mypath)=@_; $withpath=1 },
+  'nopath|nop', sub { $withpath='' },
+  'pathpostpone|P', sub { &postpone('p') },
+  'nopathpostpone|noP', sub { &unpostpone('p') },
+  'sort|t:s', sub { (undef,$sort)=@_;
+      if   ($sort eq 'n'){ $sort='' }
+      elsif($sort eq 'x' || $sort eq ''){ $sort='extension'}
+      elsif($sort eq 't'){ $sort='time'}
+      elsif($sort eq 's'){ $sort='size'}
+      elsif($sort eq 'u'){ $sort='none'}
+      else{ pod2usage("Illegal sort option $sort") }
+    },
+  'reverse|r', sub { $reverse=1 },
+  'noreverse|nor', sub { $reverse='' },
+  'critical|c:s', sub { (undef,$criticalc)=@_ },
+  'number|n:i', sub { (undef,$critnum)=@_ ; $numberarg=1 },
+  'nonumber|non', sub { $numberarg='' },
+  'numberpostpone|N', sub { &postpone('n') },
+  'nonumberpostpone|noN', sub { &unpostpone('n') },
+  'key|k:s', sub { push @KEYFILE,@_[1] }
+) or pod2usage(2);
+
+foreach (@POSTPONE)
+{
+  if($#ARGV<0) { pod2usage('Not enough arguments given') }
+  if($_ eq 'n')   { $numberarg=1; $critnum=shift @ARGV; $critnum=~s/\D//g }
+  elsif($_ eq 'p'){ $withpath=1; $mypath=shift @ARGV }
+}
+
+our $critical="\^\\$criticalc";
+
+our $lesskeyopt='';
+foreach (reverse @KEYFILE)
+{
+  if(defined($_) && ($_ ne '') && (-r $_))
+    { $lesskeyopt=" -k \"$_\""; last }
+}
+
+if($numberarg)
+{
+  $#ARGV++;
+  if($critnum>$#ARGV)
+    { $critnum=$#ARGV }
+  if($critnum<0) { $critnum=0 }
+  for(my $i=$#ARGV;$i>$critnum;$i--)
+    { $ARGV[$i]=$ARGV[$i-1] }
+  $ARGV[$critnum]=$criticalc;
+}
+else
+{
+  for($critnum=0; $critnum<=$#ARGV; $critnum++)
+    { last if("$ARGV[$critnum]" =~ /$critical/o) }
+  if($critnum>$#ARGV) { pod2usage("No argument starts with \"$criticalc\".") }
+}
+
+our $usualls=1;
+our $lsstring="$ARGV[$critnum]";
+our @L=();
+our @LS=();
+$lsstring =~ s/$critical//o;
+if($lsstring eq '')
+{
+  my $filelist;
+  for($filelist=$critnum+1; $filelist<=$#ARGV; $filelist++)
+    { last if("$ARGV[$filelist]" =~ /$critical/o) }
+  if ($filelist<=$#ARGV)
+  {
+    # the critical parameter is empty and a second critical parameter occurs:
+
+    $usualls='';
+    $#L=$#LS=$#ARGV-$filelist-1;
+    my($i,$j);
+    for($i=$#ARGV,$j=$#L;$i>$filelist;$i--,$j--)
+      { $L[$j]=$LS[$j]="$ARGV[$i]\n"; }
+    $#ARGV=$filelist-1;
+  }
+}
+our $prepend='';
+our $firstline=0;
+our $skipfirst=0;
+if($usualls)
+{
+  # In the nonexceptional case, we call ls:
+
+  # Call ls two times: First, to generate the list of filenames,
+  # second to generate the output in the form desired by the user.
+  # Let's hope that the directory is not modified in the meanwhile.
+
+  my $shortls='';
+  my $dirls='';
+  if    ($short eq 's') { $shortls=''; $firstline=0; $skipfirst=0 }
+  elsif ($short eq 'm') { $shortls='o'; $firstline=1; $skipfirst=3 }
+  else               { $shortls='o'; $firstline=1; $skipfirst=0 }
+  if($lsstring ne '') {$dirls='d'; $firstline=0 }
+
+  $sort="--sort=$sort" unless ($sort eq '');
+  my $lsopt="$sort -1$dirls$hidden$reverse";
+  my $lscommand="ls --color " . $lsopt . "b$shortls $lsstring";
+  if($withpath) {
+    $lscommand="cd $mypath ; $lscommand";
+    if($lsstring ne '')
+      {$lsstring="$mypath/$lsstring"}
+    else
+      {$lsstring="$mypath"; $prepend="$mypath/"}
+  }
+  my $lcommand="ls --color=no " . $lsopt . " $lsstring";
+  @L=`$lcommand`;
+  while($L[$#L] eq "\033\133\155") { $#L-- }
+  @LS=`$lscommand`;
+  while($LS[$#LS] eq "\033\133\155") { $#LS-- }
+
+  # A small test: At least the number of files should be compatible.
+
+  die "Two subsequent ls-commands produced incompatible output!\n"
+    if ($#LS-$firstline != $#L);
+}
+
+# If there is at least one file, we call the less-programm to select:
+
+our @N=();
+if ($firstline<=$#LS)
+{
+  # If we use a pipe to send the output to less,
+  # we risk to get a broken pipe error, if the user does not scroll through
+  # the whole pipe. Therefore, we use a tempfile.
+  # For better display, the tempfile contains the name of the command:
+  my $tempfiletoless="/tmp/selectexec.$$";
+  for(my $i=0;$i<=$#ARGV;$i++)
+  {
+    my $myarg="$ARGV[$i]";
+    if($i==$critnum)
+      { $myarg="$prepend$ARGV[$i]"; }
+    $myarg =~ s/[^\w\ \.\-\+\@\/]/_/sg;
+    $myarg =~ s/\//\!/sg;
+    $tempfiletoless="$tempfiletoless $myarg";
+  }
+  open(TOLESS,">$tempfiletoless");
+  my $maxlinelen=72;
+  my $keepatend=10;
+  for (my $i=$firstline; $i<=$#LS; $i++)
+  {
+    my $lstemp=$LS[$i];
+    for (my $j=0; $j<$skipfirst; $j++) { $lstemp =~ s/^\s*[^\s]*// }
+    # Cut the filename, if the line becomes too long:
+    # There's a bug in the less-programm for lines longer than a screenline.
+    # Better to cut the filenames than to risk that mistakenly the wrong
+    # files are selected.
+    # $maxlinelen gives the maximal length (including "\n") which is allowed
+    # without problems. Usually, this is CHARS_PER_SCREENLINE - TABSIZE.
+    # $keepatend is the number of the LAST characters of the line (including
+    # "\n") which should not be deleted (i.e. we cut in fact a middle-part of
+    # the line. For clarity, we insert dots on the `cut place').
+    # Observe that due to the colorization-escape sequences the output may
+    # look different than what you expect!
+    my $leng=length($lstemp);
+    if($leng>$maxlinelen)
+      { substr($lstemp,$maxlinelen-$keepatend-2,-$keepatend)='..' }
+    print TOLESS $lstemp;
+  }
+  close(TOLESS);
+  my $tempfilefromless="/tmp/selectexec.$$.tmp";
+  unlink $tempfilefromless;
+  system("LESS='';less -frsiMucX$lesskeyopt -Y \"$tempfilefromless\" \"$tempfiletoless\"");
+  unlink $tempfiletoless;
+
+  # If user exited with 'q' or ESC/ESC, no output file has been created.
+  # In this case, we just quit
+  unless(-e "$tempfilefromless") { exit(0) }
+
+  @N=`cat $tempfilefromless`;
+  unlink $tempfilefromless;
+}
+@LS=();
+foreach(@L){chomp}
+
+# Now the list of filenames is in @L, and the selected line numbers in @N
+
+if ($#N<0) {
+  unless ($emptyrun) { exit(0) }
+  $single='';
+}
+our $thecmd='';
+our $theend='';
+our $space='';
+for(my $i=0; $i<$critnum; $i++)
+  { $thecmd="$thecmd$space$ARGV[$i]"; $space=' ' }
+for(my $i=$critnum+1; $i<=$#ARGV; $i++)
+  { $theend="$theend $ARGV[$i]" }
+unless($single)
+{
+  my $thecrit;
+  for(my $i=0; $i<=$#N; $i++)
+    { $thecrit="$thecrit $quote$prepend" . $L[$N[$i]-1] . $quote }
+  exec("$thecmd$thecrit$theend");
+}
+our $exitcode=0;
+for(my $i=0; $i<=$#N; $i++)
+{
+  my $thecrit=" $quote$prepend" . $L[$N[$i]-1] . $quote;
+  my $retvalue=system("$thecmd$thecrit$theend");
+  if ($retvalue) { $exitcode=$retvalue; exit($retvalue) if ($errorbreak) }
+}
+exit($exitcode);

@@ -1,0 +1,44 @@
+
+The perl script bin/less-select can just be copied somewhere into your $PATH.
+The more difficult problem is to create and install a patched less-program:
+
+
+A: Generic instructions
+
+Change into a directory containing the (original) less sources and apply
+the corresponding patch (with option -p0). If your less sources are
+the correct version, no "hunks" should appear.
+
+After a successful patch, you should run the "after-patch" script and
+then you can just recompile (and install) the less program.
+
+You will probably also want to install the "less-select" perl script
+somewhere in your path and also copy "less-select-key.bin" file to an
+appropriate place (use "less-select --man" to see where less-select will
+look for this file).
+
+In order to avoid problems with different binaries, you should use
+the (patched) lesskey program to regenerate "less-select-key.bin" from its
+sources "less-select-key.src".
+
+
+B: Instructions for SUSE 9.0/9.2 (not up-to-date anymore):
+
+Install the source package for less-382-40 or less-381-88 (or less-381-32;
+similar releases might also work, but have not been tested).
+Create and copy a less-select.tar.gz containing the following files:
+	after-patch
+	bin/* (without directory name)
+	keys/* (without directory name)
+	patches/less-38*-SuSE*-select.patch (only the corresponding file
+		without directory name)
+	README.less-select (which is a copy of README).
+Copy less-select.tar.gz into /usr/src/packages/SOURCES and
+copy SuSE/less-select-*.spec into /usr/src/packages/SPECS
+(where * has to replaced by the appropriate version number)
+Then execute
+	rpmbuild -bb --clean less-select-*.spec
+This will generate the binary package in the appropriate subdirectory in
+/usr/src/packages/RPMS which you can install with rpm -U.
+(You can remove the content of the source tree /usr/src/packages/BUILD
+after compilation or by specifying corresponding options in rpmbuild).
