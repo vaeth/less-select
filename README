@@ -1,7 +1,8 @@
 (C) Martin Väth <martin@mvath.de>
-The license of this package is the GNU Public License GPL-2.
+The license of this package is the GNU Public License GPL-2 or BSD
+(it should be used with the less program without changing the license).
 
-This is a patch to provide "selection" support for the "less" program.
+This is a patch to provide selection support for the "less" program.
 
 It allows to select files (or other content) interactively from a list,
 using the less program. A perl script making use of this feature and
