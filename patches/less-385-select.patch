@@ -129,7 +129,7 @@
    r  ^R  ^L            Repaint screen.
    R                    Repaint screen, discarding buffered input.
          ---------------------------------------------------
-+        Special keys in select-mode (option -Y/Z):
++        Special keys in select-mode (option -@):
 +  *                 *  Select/Deselect top line of the screen.
 +  a                    Select/Deselect (toggling) all lines.
 +  #                    Deselect all lines.
@@ -142,7 +142,7 @@
                    Forward scroll limit.
    -z [_N]  ....  --window=[_N]
                    Set size of window.
-+  -Y [_f_i_l_e] --select=[_f_i_l_e]
++  -@ [_f_i_l_e] --select=[_f_i_l_e]
 +                  Selection mode.
    -" [_c[_c]]  .  --quotes=[_c[_c]]
                    Set shell quote characters.
@@ -181,7 +181,7 @@
  .br
  .B "     [\-T \fItagsfile\fP] [\-x \fItab\fP,...] [\-y \fIlines\fP] [\-[z] \fIlines\fP]"
  .br
-+.B "     [-Y \fIselect-file\fP]"
++.B "     [-@ \fIselect-file\fP]"
 +.br
  .B "     [\-# \fIshift\fP] [+[+]\fIcmd\fP] [\-\-] [\fIfilename\fP]..."
  .br
@@ -199,13 +199,13 @@
  Save the input to a file.
  This only works if the input is a pipe, not an ordinary file.
 +.IP "*"
-+In selection-mode (-Y), this selects/deselects the first line on the screen.
++In selection-mode (-@), this selects/deselects the first line on the screen.
 +.IP "a"
-+In selection-mode (-Y), this selects/deselects (toggling) all lines.
++In selection-mode (-@), this selects/deselects (toggling) all lines.
 +.IP "#"
-+In selection-mode (-Y), this deselects all lines.
++In selection-mode (-@), this deselects all lines.
 +.IP "."
-+In selection-mode (-Y): If something is selected, quit. Otherwise select
++In selection-mode (-@): If something is selected, quit. Otherwise select
 +the first line on the screen and quit.
  .PP
  .SH OPTIONS
@@ -214,12 +214,12 @@
  The \-c or \-C option may be used to repaint from the top of
  the screen if desired.
  By default, any forward movement causes scrolling.
-+.IP "-Y\fIfilename\fP or --select=\fIfilename\fP"
++.IP "-@\fIfilename\fP or --select=\fIfilename\fP"
 +Causes
 +.I less
 +to allow the user to select lines.
 +The line numbers are output (in the selected order) into the file.
-+If the file already exists, 
++If the file already exists,
 +.I less
 +will ask for confirmation before overwriting it.
  .IP "\-[z]\fIn\fP or \-\-window=\fIn\fP"
@@ -450,7 +450,7 @@
  static struct optname y_optname      = { "max-forw-scroll",      NULL };
  static struct optname z_optname      = { "window",               NULL };
 +#ifndef NOSELECT
-+static struct optname Y_optname      = { "select",               NULL };
++static struct optname at_optname     = { "select",               NULL };
 +#endif
  static struct optname quote_optname  = { "quotes",               NULL };
  static struct optname tilde_optname  = { "tilde",                NULL };
@@ -460,7 +460,7 @@
  		}
  	},
 +#ifndef NOSELECT
-+	{ 'Y', &Y_optname,
++	{ '@', &at_optname,
 +		STRING, 0, NULL, opt_select,
 +		"Allow to select linenumbers and output them to file: ",
 +		NULL, NULL

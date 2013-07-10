@@ -7,7 +7,7 @@ use Getopt::Long;
 use File::Temp qw/tempdir/;
 
 sub Version {
-	print "less-select v1.3 by Martin Väth\n"
+	print "less-select v1.4 by Martin Väth\n"
 	 .    "martin\@mvath.de\n";
 	exit 0
 }
@@ -592,7 +592,7 @@ if($firstline < scalar(@ls)) {
 	system('less', '-frsiucX',
 		@lesskeyopt,
 		'-Ps' . $prompt,
-		'-Y', $fromless,
+		'-@', $fromless,
 		$toless);
 	unlink($toless);
 
