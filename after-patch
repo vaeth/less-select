@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 rm -f less.man lesskey.man help.c
 nroff -man less.nro >less.man
 nroff -man lesskey.nro >lesskey.man
