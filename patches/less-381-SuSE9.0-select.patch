@@ -1,5 +1,5 @@
---- cmd.h
-+++ cmd.h
+--- 1/cmd.h
++++ 1/cmd.h
 @@ -80,6 +80,13 @@
  #define A_ROT_RCODESET		80
  #endif
@@ -14,8 +14,8 @@
  #define	A_INVALID		100
  #define	A_NOACTION		101
  #define	A_UINVALID		102
---- command.c
-+++ command.c
+--- 1/command.c
++++ 1/command.c
 @@ -26,6 +26,7 @@
  #include "position.h"
  #include "option.h"
@@ -81,8 +81,8 @@
  		case A_QUIT:
  			/*
  			 * Exit.
---- decode.c
-+++ decode.c
+--- 1/decode.c
++++ 1/decode.c
 @@ -84,6 +84,12 @@
  	'z',0,				A_F_WINDOW,
  	'w',0,				A_B_WINDOW,
@@ -96,8 +96,8 @@
  	'F',0,				A_F_FOREVER,
  	'R',0,				A_FREPAINT,
  	'r',0,				A_REPAINT,
---- edit.c
-+++ edit.c
+--- 1/edit.c
++++ 1/edit.c
 @@ -10,6 +10,7 @@
  
  
@@ -123,8 +123,8 @@
  #if LOGFILE
  	end_logfile();
  #endif
---- less.hlp
-+++ less.hlp
+--- 1/less.hlp
++++ 1/less.hlp
 @@ -25,6 +25,12 @@
    r  ^R  ^L            Repaint screen.
    R                    Repaint screen, discarding buffered input.
@@ -147,8 +147,8 @@
    -z [_N]  ....  --window=[_N]
                    Set size of window.
    -Z  ........  --change-priority
---- lesskey.c
-+++ lesskey.c
+--- 1/lesskey.c
++++ 1/lesskey.c
 @@ -147,6 +147,12 @@
  	{ "reverse-search",	A_REVERSE_SEARCH },
  	{ "reverse-search-all",	A_T_REVERSE_SEARCH },
@@ -162,8 +162,8 @@
  	{ "set-mark",		A_SETMARK },
  	{ "shell",		A_SHELL },
  	{ "status",		A_STAT },
---- lesskey.nro
-+++ lesskey.nro
+--- 1/lesskey.nro
++++ 1/lesskey.nro
 @@ -166,6 +166,10 @@
  	r		repaint 
  	^R		repaint 
@@ -175,8 +175,8 @@
  	\eeu		undo-hilite
  	g		goto-line 
  	\ekh	goto-line
---- less.nro
-+++ less.nro
+--- 1/less.nro
++++ 1/less.nro
 @@ -20,6 +20,8 @@
  .br
  .B "     [-T \fItagsfile\fP] [-x \fItab\fP,...] [-y \fIlines\fP] [-[z] \fIlines\fP]"
@@ -225,8 +225,8 @@
  .IP "-[z]\fIn\fP or --window=\fIn\fP"
  Changes the default scrolling window size to \fIn\fP lines.
  The default is one screenful.
---- line.c
-+++ line.c
+--- 1/line.c
++++ 1/line.c
 @@ -22,8 +22,10 @@
   */
  
@@ -288,8 +288,8 @@
  	/*
  	 * Display the line number at the start of each line
  	 * if the -N option is set.
---- main.c
-+++ main.c
+--- 1/main.c
++++ 1/main.c
 @@ -20,6 +20,7 @@
   */
  
@@ -308,8 +308,8 @@
  	if (any_display && is_tty)
  		clear_bot();
  	deinit();
---- Makefile.aut
-+++ Makefile.aut
+--- 1/Makefile.aut
++++ 1/Makefile.aut
 @@ -13,7 +13,7 @@
  	command.c decode.c edit.c filename.c forwback.c \
  	help.c ifile.c input.c jump.c line.c linenum.c \
@@ -328,8 +328,8 @@
  	COPYING INSTALL LICENSE Makefile.in Makefile.aut NEWS README \
  	configure configure.ac lesskey.c lessecho.c scrsize.c \
  	cmd.h funcs.h lglob.h less.h lesskey.h option.h pckeys.h position.h \
---- Makefile.dsb
-+++ Makefile.dsb
+--- 1/Makefile.dsb
++++ 1/Makefile.dsb
 @@ -22,7 +22,7 @@
  	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
  	input.obj jump.obj line.obj linenum.obj lsystem.obj \
@@ -339,8 +339,8 @@
  	ttyin.obj version.obj multi.obj unify.obj
  
  all: less$(EXT) lesskey$(EXT)
---- Makefile.dsg
-+++ Makefile.dsg
+--- 1/Makefile.dsg
++++ 1/Makefile.dsg
 @@ -37,8 +37,8 @@
  	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
@@ -352,8 +352,8 @@
  
  all: less lesskey lessecho
  
---- Makefile.dsu
-+++ Makefile.dsu
+--- 1/Makefile.dsu
++++ 1/Makefile.dsu
 @@ -31,7 +31,7 @@
  	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
  	input.obj jump.obj line.obj linenum.obj lsystem.obj \
@@ -363,8 +363,8 @@
  	ttyin.obj version.obj
  
  all: less lesskey
---- Makefile.in
-+++ Makefile.in
+--- 1/Makefile.in
++++ 1/Makefile.in
 @@ -45,9 +45,9 @@
  	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
@@ -378,8 +378,8 @@
  
  all: less lesskey lessecho
  
---- Makefile.o2e
-+++ Makefile.o2e
+--- 1/Makefile.o2e
++++ 1/Makefile.o2e
 @@ -22,8 +22,9 @@
  	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
@@ -392,8 +392,8 @@
  
  all:    less.exe lesskey.exe scrsize.exe
  
---- Makefile.o9c
-+++ Makefile.o9c
+--- 1/Makefile.o9c
++++ 1/Makefile.o9c
 @@ -26,8 +26,9 @@
  	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
@@ -406,8 +406,8 @@
  
  all: less lessecho lesskey
  
---- Makefile.o9u
-+++ Makefile.o9u
+--- 1/Makefile.o9u
++++ 1/Makefile.o9u
 @@ -25,8 +25,9 @@
  	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
@@ -420,8 +420,8 @@
  
  all: less lesskey
  
---- Makefile.wnb
-+++ Makefile.wnb
+--- 1/Makefile.wnb
++++ 1/Makefile.wnb
 @@ -22,7 +22,7 @@
  	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
  	input.obj jump.obj line.obj linenum.obj lsystem.obj \
@@ -431,8 +431,8 @@
  	ttyin.obj version.obj regexp.obj multi.obj unify.obj
  
  all: less lesskey
---- Makefile.wnm
-+++ Makefile.wnm
+--- 1/Makefile.wnm
++++ 1/Makefile.wnm
 @@ -27,7 +27,7 @@
  	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
  	input.obj jump.obj line.obj linenum.obj lsystem.obj \
@@ -442,8 +442,8 @@
  	ttyin.obj version.obj regexp.obj multi.obj unify.obj
  
  all: less.exe lesskey.exe
---- opttbl.c
-+++ opttbl.c
+--- 1/opttbl.c
++++ 1/opttbl.c
 @@ -21,6 +21,7 @@
  
  #include "less.h"
@@ -476,8 +476,8 @@
  	{ 'z', &z_optname,
  		NUMBER, -1, &swindow, NULL,
  		{
---- select.c
-+++ select.c
+--- 1/select.c
++++ 1/select.c
 @@ -0,0 +1,342 @@
 +
 +#ifndef NOSELECT
@@ -821,8 +821,8 @@
 +}
 +
 +#endif
---- select.h
-+++ select.h
+--- 1/select.h
++++ 1/select.h
 @@ -0,0 +1,17 @@
 +
 +#ifndef NOSELECT

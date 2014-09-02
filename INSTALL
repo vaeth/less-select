@@ -6,7 +6,7 @@ The more difficult problem is to create and install a patched less-program:
 A: Generic instructions
 
 Change into a directory containing the (original) less sources and apply
-the corresponding patch (with option -p0). If your less sources are
+the corresponding patch (with option -p1). If your less sources are
 the correct version, no "hunks" should appear.
 
 After a successful patch, you should run the "after-patch" script and

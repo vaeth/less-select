@@ -91,7 +91,7 @@ cp %{S:2} .
 %setup -T -D -q -a 3 -n less-%{version}
 # If the patch is in a subdirectory, move that out:
 test -d less-select* && ( mv less-select* lsd ; mv lsd/* . ; rmdir lsd )
-patch -p0 <less-%{version}-SuSE9.0-select.patch
+patch -p1 <less-%{version}-SuSE9.0-select.patch
 rm -f less.man lesskey.man help.c
 
 %build
