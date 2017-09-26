@@ -1,16 +1,16 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
+BEGIN { require 5.006_001 }
+package LessSelect;
+our $VERSION = 'v1.5.0';
+eval { $VERSION = version->declare($VERSION) };
+eval 'use version 0.77; $VERSION = version->declare($VERSION)' if($@);
+
 use warnings;
 use strict;
 use integer;
-use Pod::Usage;
-use Getopt::Long;
-use File::Temp qw/tempdir/;
-
-sub Version {
-	print "less-select v1.4 by Martin Väth\n"
-	 .    "martin\@mvath.de\n";
-	exit 0
-}
+use File::Temp 0.19 ();
+use Getopt::Long 2.24 ();
+#use Pod::Usage ();
 
 =head1 NAME
 
@@ -120,11 +120,11 @@ Display a brief help.
 Display an extended help
 (depending on your perl installation usually as a manpage).
 
-=item B<--single> or B<-s> (switch)
+=item B<--single> or B<-s>
 
 Execute I<command> consecutively for each selected file.
 
-=item B<--Single> or B<-S> (switch)
+=item B<--Single> or B<-S>
 
 Execute I<command> consecutively for each selected file, but stop processing
 if I<command> returns with a nonzero exit code.
@@ -160,7 +160,7 @@ selected filename.
 Sort listing of files by name (n), time (t), size (s), extension (x)
 or unsorted (u). The default is x.
 
-=item B<--reverse> or B<-r> (switch)
+=item B<--reverse> or B<-r>
 
 Reverse sorting of listing
 
@@ -168,7 +168,7 @@ Reverse sorting of listing
 
 Let the "critical" argument start with I<char> instead of B<@>.
 
-=item B<--number=>I<n> or B<-n> I<n> (switch)
+=item B<--number=>I<n> or B<-n> I<n>
 
 Magically insert B<@> as the I<n>-th word in the list "I<command> I<args>".
 (I<0> means the first word in this list).
@@ -177,18 +177,18 @@ Magically insert B<@> as the I<n>-th word in the list "I<command> I<args>".
 
 Use I<file> as F<.key>-file for less.
 
-=item B<--unquoted> or B<-u> (switch)
+=item B<--unquoted> or B<-u>
 
 Pass the filenames unquoted to I<command>.
 
-=item B<--numberpostpone> or B<-N> (switch)
+=item B<--numberpostpone> or B<-N>
 
-This is a very special options meant to simplify writing aliases.
+This is a very special option meant to simplify writing aliases.
 Essentially, this behaves like the option B<--number>, but the
 argument is not read immediately.
 Instead, the first non-option argument is interpreted as the argument.
 
-=item B<--pathpostpone> or B<-P> (switch)
+=item B<--pathpostpone> or B<-P>
 
 This is the analogon to B<--numberpostpone> for the B<--path> option.
 If this option is combined with --numberpostpone, the first two non-option
@@ -302,9 +302,19 @@ Martin VE<auml>th E<lt>martin@mvath.deE<gt>
 
 =cut
 
-sub Fatal {
-	print(STDERR 'fatal: ', $_[0], "\n");
+sub fatal {
+	print(STDERR 'fatal: ', @_, "\n");
 	exit 1
+}
+
+sub version {
+	print($VERSION, "\n");
+	exit(0)
+}
+
+sub pod2usage {
+	require Pod::Usage;
+	&Pod::Usage::pod2usage
 }
 
 # Default for the options
@@ -318,10 +328,10 @@ my @keyfile = (
 	'/usr/local/etc/less-select.key'
 );
 
-if(exists($ENV{'HOME'}) && defined($ENV{'HOME'}) && ($ENV{'HOME'} ne '')) {
+if (exists($ENV{'HOME'}) && defined($ENV{'HOME'}) && ($ENV{'HOME'} ne '')) {
 	push(@keyfile, $ENV{'HOME'} . '/.less-select-key.bin')
 }
-if(exists($ENV{'LESSSELECTKEY'})) {
+if (exists($ENV{'LESSSELECTKEY'})) {
 	push(@keyfile, $ENV{'LESSSELECTKEY'})
 }
 
@@ -343,7 +353,7 @@ my $quote = "\'";
 
 my @postpone = ();
 
-sub Postpone {
+sub postpone {
 	my($a) = @_;
 	foreach my $i (@postpone) {
 		return if($i eq $a)
@@ -351,59 +361,64 @@ sub Postpone {
 	push(@postpone, $a)
 }
 
-sub Unpostpone {
-	my($a) = @_;
-	foreach (@postpone) {
-		if($_ eq $a) {
-			$_ = '';
-			last
+sub cdbacktick {
+	my $pid = open(my $kid, '-|');
+	&fatal("cannot fork: $!") unless (defined($pid));
+	unless($pid) {
+		my $dir = shift();
+		if (defined($dir) && ($dir ne '')) {
+			chdir($dir) or &fatal('cannot cd to ' . $dir)
 		}
+		#$ENV{'LANG'} = $ENV{'LANGUAGE'} = $ENV{'LC_MESSAGES'} = 'C';
+		#delete $ENV{'LC_ALL'};
+		exec(@_) || &fatal('cannot exec ' . join(' ', @_))
 	}
+	my @result = (<$kid>);
+	close($kid);
+	(@result)
 }
 
-$Getopt::Long::bundling = 1;
-GetOptions(
-	'help|h', sub { pod2usage(1) },
-	'man|?', sub { pod2usage(-verbose => 2) },
-	'version|V', \&Version,
+Getopt::Long::Configure(qw(gnu_getopt));
+Getopt::Long::GetOptions(
+	'help|h', sub { &pod2usage(0) },
+	'man|?', sub { &pod2usage(-verbose => 2, -exit => 0) },
+	'version|V', \&version,
 	'single|s', sub { $single=1; $errorbreak = '' },
-	'nosingle|nos', sub { $single = '' },
 	'Single|S', sub { $single = $errorbreak = 1 },
-	'noSingle|noS', sub { $single = $errorbreak = '' },
 	'brief|b', sub { $short = 's' },
-	'nolong|nobrief|nol|nob', sub { $short = 'm' },
 	'long|l', sub { $short = 'L' },
 	'visible|v', sub { $hidden = '' },
 	'all|a', sub { $hidden = 'a' },
-	'novisible|noall|nov|noa', sub { $hidden = 'A' },
 	'emptyrun|e', sub { $emptyrun = 1 },
-	'noemptyrun|noe', sub { $emptyrun = '' },
 	'unquoted|u', sub { $quote = '' },
-	'nounquoted|nou', sub { $quote = "\'" },
-	'path|p=s', sub { (undef, $mypath) = @_; $withpath = 1 },
-	'nopath|nop', sub { $withpath = '' },
-	'pathpostpone|P', sub { &Postpone('p') },
-	'nopathpostpone|noP', sub { &Unpostpone('p') },
-	'sort|t:s', sub { (undef, $sort) = @_;
-			if   ($sort eq 'n'){ $sort = '' }
-			elsif(($sort eq 'x') || ($sort eq '')){ $sort = 'extension'}
-			elsif($sort eq 't'){ $sort = 'time'}
-			elsif($sort eq 's'){ $sort = 'size'}
-			elsif($sort eq 'u'){ $sort = 'none'}
-			else{ pod2usage("illegal sort option $sort") }
+	'path|p=s', sub { $mypath = $_[1]; $withpath = 1 },
+	'pathpostpone|P', sub { &postpone('p') },
+	'sort|t:s', sub { my $s = $_[1];
+			$s = '?' unless(defined($s) && ($s ne ''));
+			$s = substr($s, 0, 1);
+			if ($s eq 'n') {
+				$sort = ''
+			} elsif (($s eq 'x') || ($s eq '')) {
+				$sort = 'extension'
+			} elsif ($s eq 't') {
+				$sort = 'time'
+			} elsif ($s eq 's') {
+				$sort = 'size'
+			} elsif ($s eq 'u') {
+				$sort = 'none'
+			} else {
+				&fatal("illegal sort option $sort")
+			}
 		},
 	'reverse|r', sub { $reverse = 1 },
-	'noreverse|nor', sub { $reverse = '' },
-	'critical|c:s', sub { (undef, $critical) = @_ },
-	'number|n:i', sub { (undef, $critnum) = @_; $numberarg = 1 },
-	'nonumber|non', sub { $numberarg = '' },
-	'numberpostpone|N', sub { &Postpone('n') },
-	'nonumberpostpone|noN', sub { &Unpostpone('n') },
-	'key|k:s', sub { push(@keyfile, $_[1]) }
-) or pod2usage(2);
+	'critical|c=s', sub { $critical = $_[1] },
+	'number|n=i', sub { $critnum = $_[1]; $numberarg = 1 },
+	'numberpostpone|N', sub { &postpone('n') },
+	'key|k=s', sub { push(@keyfile, $_[1]) }
+) or &pod2usage(2);
 
 foreach my $i (@postpone) {
-	unless(scalar(@ARGV)) {
+	unless(@ARGV) {
 		pod2usage('not enough arguments given')
 	}
 	if($i eq 'n') {
@@ -418,25 +433,23 @@ foreach my $i (@postpone) {
 }
 
 my @lesskeyopt = ();
-foreach my $i (reverse(@keyfile)) {
-	if(defined($i) && ($i ne '') && (-r $i)) {
+for my $i (reverse(@keyfile)) {
+	if (defined($i) && ($i ne '') && (-r $i)) {
 		push(@lesskeyopt, '-k', $i);
 		last
 	}
 }
 
-if($numberarg) {
-	my $max = scalar(@ARGV);
-	if($critnum > $max) {
-		$critnum = $max;
-	}
-	$critnum = 0 if($critnum < 0);
+if ($numberarg) {
+	my $max = @ARGV;
+	$critnum = $max if ($critnum > $max);
+	$critnum = 0 if ($critnum < 0);
 	@ARGV[$critnum .. $max] = ($critical, @ARGV[$critnum .. $#ARGV]);
 } else {
-	for($critnum = 0; $critnum < scalar(@ARGV); ++$critnum) {
-		last if(substr($ARGV[$critnum], 0, length($critical)) eq $critical)
+	for ($critnum = 0; $critnum < @ARGV; ++$critnum) {
+		last if (substr($ARGV[$critnum], 0, length($critical)) eq $critical)
 	}
-	if($critnum >= scalar (@ARGV)) {
+	if ($critnum >= @ARGV) {
 		pod2usage("no argument starts with \"$critical\".")
 	}
 }
@@ -446,10 +459,10 @@ my @ls = ();
 my $usualls = 1;
 my $lsstring = $ARGV[$critnum];
 $lsstring = substr($lsstring, length($critical))
-	if(substr($lsstring, 0, length($critical)) eq $critical);
+	if (substr($lsstring, 0, length($critical)) eq $critical);
 if($lsstring eq '') {
-	for(my $fl = $critnum + 1; $fl < scalar(@ARGV); ++$fl) {
-		next unless(substr($ARGV[$fl], 0, length($critical)) eq $critical);
+	for(my $fl = $critnum + 1; $fl < @ARGV; ++$fl) {
+		next unless (substr($ARGV[$fl], 0, length($critical)) eq $critical);
 		# the critical parameter is empty and a second critical parameter occurs:
 		$usualls = '';
 		$#llist = $#ls = $#ARGV - $fl - 1;
@@ -462,17 +475,9 @@ if($lsstring eq '') {
 	}
 }
 
-sub Shq {
-	my ($a) = (@_);
-	$a =~ s/\'/\'\\\'\'/go;
-	$a = "'$a'";
-	$a =~ s/(^|[^\\])\'([\da-zA-Z\_\-\,\.\:\/]*)\'/$1$2/g;
-	return $a;
-}
-
-sub CleanArray {
+sub clean_array {
 	my ($a) = @_;
-	while($a->[scalar(@$a) - 1] eq "\033\133\155") {
+	while ($a->[@$a - 1] eq "\033\133\155") {
 		pop(@$a)
 	}
 }
@@ -480,65 +485,67 @@ sub CleanArray {
 my $prepend = '';
 my $firstline = 0;
 my $skipfirst = 0;
-if($usualls) {
+if ($usualls) {
 	# In the nonexceptional case, we call ls:
 
 	# Call ls two times: First, to generate the list of filenames,
 	# second to generate the output in the form desired by the user.
 	# Let's hope that the directory is not modified in the meanwhile.
 
-	my $shortls = '';
+	my $shortls = 'b';
 	my $dirls = '';
-	if($short eq 's') {
-		$shortls = '';
+	if ($short eq 's') {
 		$firstline = 0;
 		$skipfirst = 0
-	} elsif($short eq 'm') {
-		$shortls = 'o';
+	} elsif ($short eq 'm') {
+		$shortls .= 'o';
 		$firstline = 1;
 		$skipfirst = 3
 	} else {
-		$shortls = 'o';
+		$shortls .= 'o';
 		$firstline = 1;
 		$skipfirst = 0
 	}
-	if($lsstring ne '') {
+
+	if ($lsstring ne '') {
 		$dirls = 'd';
 		$firstline = 0
 	}
 
-	my $lsopt = '';
-	$lsopt = "--sort=$sort " unless ($sort eq '');
-	$lsopt .= "-1$dirls$hidden$reverse";
-	my $lscommand = 'ls --color ' . $lsopt . "b$shortls " . $lsstring;
-	if($withpath) {
-		$lscommand = 'cd -- ' . &Shq($mypath) .
-			'  >/dev/null 2>&1 && ' . $lscommand;
-		if($lsstring ne '') {
-			$lsstring = "$mypath/$lsstring"
+	my @otheropt = ('--quoting-style=literal');
+	push(@otheropt, "--sort=$sort") unless ($sort eq '');
+	my $lsopt = '-1' . $dirls . $hidden . $reverse;
+	my @lscommand = ('ls', '--color', @otheropt, $lsopt . $shortls);
+	push(@lscommand, '--', $lsstring) if ($lsstring ne '');
+	my $cdpath = undef;
+	if ($withpath) {
+		$cdpath = $mypath;
+		if ($lsstring ne '') {
+			$lsstring = $mypath . '/' . $lsstring
 		} else {
 			$prepend = $mypath . '/';
 			$lsstring = $mypath
 		}
 	}
-	my $lcommand = 'ls --color=no ' . $lsopt . ' ' . $lsstring;
+	my @lcommand = ('ls', '--color=no', @otheropt, $lsopt);
+	push(@lcommand, '--', $lsstring) if ($lsstring ne '');
 	#$ENV{'LANG'} = $ENV{'LANGUAGE'} = $ENV{'LC_MESSAGES'} = 'C';
 	#delete $ENV{'LC_ALL'};
-	@llist = `$lcommand`;
-	@ls = `$lscommand`;
-	CleanArray(\@llist);
-	CleanArray(\@ls);
+	@llist = &cdbacktick($cdpath, @lcommand);
+	@ls = &cdbacktick(undef, @lscommand);
+	&clean_array(\@llist);
+	&clean_array(\@ls);
 
 	# A small test: At least the number of files should be compatible.
-	&Fatal('two subsequent ls-commands produced incompatible output')
-		unless(scalar(@ls) - $firstline == scalar(@llist))
+	&fatal('two subsequent ls-commands produced incompatible output')
+		unless (@ls - $firstline == @llist)
 }
 
-sub CommandPrintable {
+sub command_printable {
 	my @command = ();
-	for(my $i = 0; $i < scalar(@ARGV); ++$i) {
+	for (my $i = 0; $i < @ARGV; ++$i) {
 		my $myarg = $ARGV[$i];
-		if($i == $critnum) {
+		if ($i == $critnum) {
 			$myarg = ($withpath ? ($mypath . '/') : '') . $critical
 		}
 		$myarg =~ s/[\:\$]/\?/sg;
@@ -548,15 +555,15 @@ sub CommandPrintable {
 	return join(' ', @command)
 }
 
-sub SaveLs {
+sub save_ls {
 	my ($filename) = @_;
-	open(my $fh, '>', $filename) or &Fatal("cannot write to $filename");
+	open(my $fh, '>', $filename) or &fatal("cannot write to $filename");
 	my $maxlinelen = 72;
 	my $keepatend = 10;
-	for(my $i = $firstline; $i < scalar(@ls); ++$i) {
+	for (my $i = $firstline; $i < @ls; ++$i) {
 		my $lstemp = $ls[$i];
 		for (my $j = 0; $j < $skipfirst; ++$j) {
-			$lstemp =~ s/^\s*[^\s]*//
+			$lstemp =~ s{^\s*[^\s]*}{}
 		}
 		# Cut the filename, if the line becomes too long:
 		# There's a bug in the less-programm for lines longer than a screenline.
@@ -570,9 +577,8 @@ sub SaveLs {
 		# Observe that due to the colorization-escape sequences the output may
 		# look different than what you expect!
 		my $leng = length($lstemp);
-		if($leng > $maxlinelen) {
-			substr($lstemp, $maxlinelen - $keepatend - 2, -$keepatend) = '..'
-		}
+		substr($lstemp, $maxlinelen - $keepatend - 2, -$keepatend) = '..'
+			if ($leng > $maxlinelen);
 		print($fh $lstemp)
 	}
 	close($fh)
@@ -581,26 +587,32 @@ sub SaveLs {
 # If there is at least one file, we call the less-programm to select:
 
 my @resn = ();
-if($firstline < scalar(@ls)) {
-	my $prompt = &CommandPrintable . '  (#%lt) ?e:%PB\%';
-	my $tempdir = tempdir(CLEANUP => 1);
+if ($firstline < @ls) {
+	my $prompt = &command_printable() . '  (#%lt) ?e:%PB\%';
+	my $tempdir = File::Temp->newdir();
 	my $toless = $tempdir . '/_';
 	my $fromless = $tempdir . '/0';
-	&SaveLs($toless);
+	&save_ls($toless);
 	delete($ENV{'LESS'});
 	delete($ENV{'LESSOPEN'});
-	system('less', '-frsiucX',
+	my $status = system('less', '-frsiucX',
 		@lesskeyopt,
 		'-Ps' . $prompt,
 		'-@', $fromless,
 		$toless);
 	unlink($toless);
 
+	if ($status) {  # In case of error exit, we just return the error status
+		unlink($fromless);
+		# If less could not be started ($?<0), we return 1
+		exit(($? < 0) ? 1 : ($? >> 8))
+	}
+
 	# If user exited with 'q' or ESC/ESC, no output file has been created.
 	# In this case, we just quit
-	exit(0) unless(-e $fromless);
+	exit(0) unless (-e $fromless);
 
-	open(my $fh, '<', $fromless) or &Fatal('cannot read output from less');
+	open(my $fh, '<', $fromless) or &fatal('cannot read output from less');
 	@resn = <$fh>;
 	close($fh);
 	unlink($fromless)
@@ -613,7 +625,7 @@ foreach my $i (@llist) {
 
 # Now the list of filenames is in @llist, and the selected line numbers in @resn
 
-unless(scalar(@resn)) {
+unless(@resn) {
 	exit(0) unless($emptyrun);
 	$single = ''
 }
@@ -621,19 +633,19 @@ unless(scalar(@resn)) {
 my @thecmd = @ARGV[0 .. $critnum - 1];
 my @theend = @ARGV[$critnum + 1 .. $#ARGV];
 
-unless($single) {
-	for(my $i = 0; $i < scalar(@resn); ++$i) {
+unless ($single) {
+	for (my $i = 0; $i < @resn; ++$i) {
 		push(@thecmd, $prepend . $llist[$resn[$i] - 1])
 	}
 	exec(@thecmd, @theend)
 }
 
 my $exitcode = 0;
-for(my $i = 0; $i < scalar(@resn); ++$i) {
+for (my $i = 0; $i < @resn; ++$i) {
 	my $retvalue = system(@thecmd, $prepend . $llist[$resn[$i] - 1], @theend);
-	if($retvalue) {
+	if ($retvalue) {
 		$exitcode = $retvalue;
-		exit($retvalue) if($errorbreak)
+		exit($retvalue) if ($errorbreak)
 	}
 }
 

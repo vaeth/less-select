@@ -1,7 +1,10 @@
 #!/bin/sh
 rm -f less.man lesskey.man help.c
-nroff -man less.nro >less.man
-nroff -man lesskey.nro >lesskey.man
-gcc -o mkhelp mkhelp.c
-./mkhelp <less.hlp >help.c
-rm -f mkhelp
+nroff -man less.nro >less.man || exit
+nroff -man lesskey.nro >lesskey.man || exit
+if test -e mkhelp.c
+then	gcc -o mkhelp mkhelp.c || exit
+	./mkhelp <less.hlp >help.c || exit
+	rm -f mkhelp
+else	perl mkhelp.pl <less.hlp >help.c || exit
+fi

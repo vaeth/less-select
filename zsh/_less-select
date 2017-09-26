@@ -1,0 +1,22 @@
+#compdef less-select
+_arguments -s -S : \
+'(* -)'{'--help','-h'}'[print a brief help]' \
+'(* -)'{'--man','-\\?'}'[show extended help as a manpage]' \
+'(* -)'{'--version','-V'}'[print version]' \
+{'(--single --Single -S)-s','(-s -Single -S)--single'}'[execute for each selection, continuing at error]' \
+{'(--Single --single -s)-S','(-S --single -s)--Single'}'[execute for each selection, stopping at error]' \
+{'(--visible)-v','(-v)--visible'}'[list only non-hidden files]' \
+{'(--all)-a','(-a)--all'}'[list all files]' \
+{'(--brief)-b','(-b)--brief'}'[list only filenames]' \
+{'(--long)-l','(-l)--long'}'[list more information]' \
+{'(--emptyrun)-e','(-e)--emptyrun'}'[run even if no file selected]' \
+{'(--path --pathpostpone -P)-p+','(-p --pathpostpone -P)--path='}'[use files from specified dir]:dirs:_files -/' \
+{'( --pathpostpone --path -p)-P','(-P --path -p)--pathpostpone'}'[use files from dir declared by first arg]' \
+{'(--sort)-t+','(-t)--sort='}'[sort by n\(ame\) t\(ime\) s\(ize\)x\(tension\)u\(nsorted\)]:sort type:(ntsxu)' \
+{'(--reverse)-r','(-r)--reverse'}'[reverse sort order]' \
+{'(--number --numberpostpone -N)-n+','(-n --numberpostpone -N)--number='}'[insert \@ as specified arg number 0-x]:arg number:(0)' \
+{'(--numberpostpone --number -n)-N','(-N --number -n)--numberpostpone'}'[insert \@ as arg number declared by first arg]' \
+{'(--critical)-c+','(-c)--critical='}'[set specified char as \@]:critical char:(\@)' \
+{'(--key)-k+','(-k)--key='}'[use specified key file]:key file:_file -g "*.key"' \
+{'(--unquoted)-u','(-u)--unquoted'}'[pass names unquoted to command]' \
+'*::command: _normal'

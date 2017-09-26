@@ -21,6 +21,9 @@ In order to avoid problems with different binaries, you should use
 the (patched) lesskey program to regenerate "less-select-key.bin" from its
 sources "less-select-key.src".
 
+To get zsh completion for "less-select", copy the content of zsh/ somewhere
+into your $fpath, perhaps /usr/share/zsh/site-functions
+
 
 B: Instructions for SUSE 9.0/9.2 (not up-to-date anymore):
 
@@ -42,3 +45,6 @@ This will generate the binary package in the appropriate subdirectory in
 /usr/src/packages/RPMS which you can install with rpm -U.
 (You can remove the content of the source tree /usr/src/packages/BUILD
 after compilation or by specifying corresponding options in rpmbuild).
+
+
+C: For Gentoo, there is an ebuild in the mv overlay (available over layman)
