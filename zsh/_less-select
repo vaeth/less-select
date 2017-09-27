@@ -18,5 +18,5 @@ _arguments -s -S : \
 {'(--numberpostpone --number -n)-N','(-N --number -n)--numberpostpone'}'[insert \@ as arg number declared by first arg]' \
 {'(--critical)-c+','(-c)--critical='}'[set specified char as \@]:critical char:(\@)' \
 {'(--key)-k+','(-k)--key='}'[use specified key file]:key file:_file -g "*.key"' \
-{'(--unquoted)-u','(-u)--unquoted'}'[pass names unquoted to command]' \
+{'(--unresolved)-u','(-u)--unresolved'}'[pass files with unresolved escapes to command]' \
 '*::command: _normal'

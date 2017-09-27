@@ -15,7 +15,8 @@ then you can just recompile (and install) the less program.
 You will probably also want to install the "less-select" perl script
 somewhere in your path and also copy "less-select-key.bin" file to an
 appropriate place (use "less-select --man" to see where less-select will
-look for this file).
+look for this file). Be aware that the less-select script relies upon
+GNU coreutils specific options of ls like --quoting-style=escape
 
 In order to avoid problems with different binaries, you should use
 the (patched) lesskey program to regenerate "less-select-key.bin" from its
