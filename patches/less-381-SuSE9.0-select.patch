@@ -153,7 +153,7 @@
  	{ "reverse-search",	A_REVERSE_SEARCH },
  	{ "reverse-search-all",	A_T_REVERSE_SEARCH },
  	{ "right-scroll",	A_RSHIFT },
-+#ifndef NOSEL
++#ifndef NOSELECT
 +	{ "select-toggle-one",	A_SEL_SINGLE },
 +	{ "select-toggle-all",	A_SEL_ALL },
 +	{ "select-unselect-all",A_SEL_DEL },

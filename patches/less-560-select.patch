@@ -1,151 +1,161 @@
 --- 1/Makefile.aut
 +++ 1/Makefile.aut
-@@ -13,7 +13,7 @@
- 	command.c decode.c edit.c filename.c forwback.c \
+@@ -13,8 +13,8 @@
+ 	command.c cvt.c decode.c edit.c filename.c forwback.c \
  	help.c ifile.c input.c jump.c line.c linenum.c \
  	lsystem.c mark.c optfunc.c option.c opttbl.c os.c \
--	output.c position.c prompt.c search.c signal.c \
-+	output.c position.c prompt.c search.c select.c signal.c \
- 	tags.c ttyin.c version.c  
+-	output.c pattern.c position.c prompt.c search.c signal.c \
+-	tags.c ttyin.c version.c
++	output.c pattern.c position.c prompt.c search.c \
++	select.c signal.c tags.c ttyin.c version.c
  DISTFILES_W = \
  	defines.ds  Makefile.dsb Makefile.dsg Makefile.dsu \
-@@ -21,7 +21,7 @@
- 	defines.o9  Makefile.o9c Makefile.o9u \
- 	defines.wn  Makefile.wnm Makefile.wnb
+ 	defines.o2  Makefile.o2e \
+@@ -24,7 +24,7 @@
+ UNICODE_FILES = \
+ 	compose.uni fmt.uni ubin.uni wide.uni
  DISTFILES = \
 -	${SRC} regexp.c regexp.h \
 +	${SRC} select.h regexp.c regexp.h \
  	COPYING INSTALL LICENSE Makefile.in Makefile.aut NEWS README \
- 	configure configure.ac lesskey.c lessecho.c scrsize.c \
- 	charset.h cmd.h funcs.h lglob.h less.h lesskey.h option.h pckeys.h position.h \
+ 	configure.ac lesskey.c lessecho.c scrsize.c \
+ 	charset.h cmd.h funcs.h lglob.h less.h lesskey.h option.h \
 --- 1/Makefile.dsb
 +++ 1/Makefile.dsb
-@@ -22,7 +22,7 @@
- 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
- 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
- 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
--	position.obj prompt.obj search.obj signal.obj tags.obj \
-+	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
- 	ttyin.obj version.obj
+@@ -23,8 +23,8 @@
+ 	command.obj cvt.obj decode.obj edit.obj filename.obj forwback.obj \
+ 	help.obj ifile.obj input.obj jump.obj line.obj linenum.obj \
+ 	lsystem.obj mark.obj optfunc.obj option.obj opttbl.obj os.obj \
+-	output.obj pattern.obj position.obj prompt.obj search.obj signal.obj \
+-	tags.obj ttyin.obj version.obj
++	output.obj pattern.obj position.obj prompt.obj search.obj \
++	select.obj signal.obj tags.obj ttyin.obj version.obj
  
  all: less$(EXT) lesskey$(EXT)
+ 
 --- 1/Makefile.dsg
 +++ 1/Makefile.dsg
-@@ -37,8 +37,8 @@
- 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+@@ -38,8 +38,8 @@
+ 	command.${O} cvt.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
  	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
--	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} signal.${O} \
 -	tags.${O} ttyin.${O} version.${O}
-+	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
-+	signal.${O} tags.${O} ttyin.${O} version.${O}
++	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} \
++	select.${O} signal.${O} tags.${O} ttyin.${O} version.${O}
  
  all: less lesskey lessecho
  
 --- 1/Makefile.dsu
 +++ 1/Makefile.dsu
-@@ -31,7 +31,7 @@
- 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
- 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
- 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
--	position.obj prompt.obj search.obj signal.obj tags.obj \
-+	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
- 	ttyin.obj version.obj
+@@ -32,8 +32,8 @@
+ 	command.obj cvt.obj decode.obj edit.obj filename.obj forwback.obj \
+ 	help.obj ifile.obj input.obj jump.obj line.obj linenum.obj \
+ 	lsystem.obj mark.obj optfunc.obj option.obj opttbl.obj os.obj \
+-	output.obj pattern.obj position.obj prompt.obj search.obj signal.obj \
+-	tags.obj  ttyin.obj version.obj
++	output.obj pattern.obj position.obj prompt.obj search.obj \
++	select.obj signal.obj tags.obj  ttyin.obj version.obj
  
  all: less lesskey
+ 
 --- 1/Makefile.in
 +++ 1/Makefile.in
-@@ -43,8 +43,8 @@
- 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+@@ -48,8 +48,8 @@
+ 	command.${O} cvt.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
  	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
--	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} signal.${O} \
 -	tags.${O} ttyin.${O} version.${O}  @REGEX_O@
-+	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
-+	signal.${O} tags.${O} ttyin.${O} version.${O}  @REGEX_O@
++	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} \
++	select.${O} signal.${O} tags.${O} ttyin.${O} version.${O}  @REGEX_O@
  
- all: less lesskey lessecho
+ all: less$(EXEEXT) lesskey$(EXEEXT) lessecho$(EXEEXT)
  
 --- 1/Makefile.o2e
 +++ 1/Makefile.o2e
-@@ -22,8 +22,8 @@
- 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+@@ -23,8 +23,8 @@
+ 	command.${O} cvt.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
  	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
--	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} signal.${O} \
 -	tags.${O} ttyin.${O} version.${O}  regexp.${O}
-+	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
-+	signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
++	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} \
++	select.${O} signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
  
  all:    less.exe lesskey.exe scrsize.exe
  
 --- 1/Makefile.o9c
 +++ 1/Makefile.o9c
-@@ -26,8 +26,8 @@
- 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+@@ -27,8 +27,8 @@
+ 	command.${O} cvt.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
  	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
--	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} signal.${O} \
 -	tags.${O} ttyin.${O} version.${O}  regexp.${O}
-+	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
-+	signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
++	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} \
++	select.${O} signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
  
  all: less lessecho lesskey
  
 --- 1/Makefile.o9u
 +++ 1/Makefile.o9u
-@@ -25,8 +25,8 @@
- 	command.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
+@@ -26,8 +26,8 @@
+ 	command.${O} cvt.${O} decode.${O} edit.${O} filename.${O} forwback.${O} \
  	help.${O} ifile.${O} input.${O} jump.${O} line.${O} linenum.${O} \
  	lsystem.${O} mark.${O} optfunc.${O} option.${O} opttbl.${O} os.${O} \
--	output.${O} position.${O} prompt.${O} search.${O} signal.${O} \
+-	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} signal.${O} \
 -	tags.${O} ttyin.${O} version.${O}  regexp.${O}
-+	output.${O} position.${O} prompt.${O} search.${O} select.${O} \
-+	signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
++	output.${O} pattern.${O} position.${O} prompt.${O} search.${O} \
++	select.${O} signal.${O} tags.${O} ttyin.${O} version.${O}  regexp.${O}
  
  all: less lesskey
  
 --- 1/Makefile.wnb
 +++ 1/Makefile.wnb
-@@ -29,7 +29,7 @@
- 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
- 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
- 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
--	position.obj prompt.obj search.obj signal.obj tags.obj \
-+	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
- 	ttyin.obj version.obj regexp.obj
+@@ -30,8 +30,8 @@
+ 	command.obj cvt.obj decode.obj edit.obj filename.obj forwback.obj \
+ 	help.obj ifile.obj input.obj jump.obj line.obj linenum.obj \
+ 	lsystem.obj mark.obj optfunc.obj option.obj opttbl.obj os.obj \
+-	output.obj pattern.obj position.obj prompt.obj search.obj signal.obj \
+-	tags.obj ttyin.obj version.obj regexp.obj
++	output.obj pattern.obj position.obj prompt.obj search.obj \
++	select.obj signal.obj tags.obj ttyin.obj version.obj regexp.obj
  
  all: less lesskey lessecho
+ 
 --- 1/Makefile.wnm
 +++ 1/Makefile.wnm
-@@ -27,7 +27,7 @@
- 	decode.obj edit.obj filename.obj forwback.obj help.obj ifile.obj \
- 	input.obj jump.obj line.obj linenum.obj lsystem.obj \
- 	mark.obj optfunc.obj option.obj opttbl.obj os.obj output.obj \
--	position.obj prompt.obj search.obj signal.obj tags.obj \
-+	position.obj prompt.obj search.obj select.obj signal.obj tags.obj \
- 	ttyin.obj version.obj regexp.obj
+@@ -28,8 +28,8 @@
+ 	command.obj cvt.obj decode.obj edit.obj filename.obj forwback.obj \
+ 	help.obj ifile.obj input.obj jump.obj line.obj linenum.obj \
+ 	lsystem.obj mark.obj optfunc.obj option.obj opttbl.obj os.obj \
+-	output.obj pattern.obj position.obj prompt.obj search.obj signal.obj \
+-	tags.obj ttyin.obj version.obj regexp.obj
++	output.obj pattern.obj position.obj prompt.obj search.obj \
++	select.obj signal.obj tags.obj ttyin.obj version.obj regexp.obj
  
  all: less.exe lesskey.exe
+ 
 --- 1/cmd.h
 +++ 1/cmd.h
-@@ -66,6 +66,13 @@
- #define	A_NEXT_TAG		53
- #define	A_PREV_TAG		54
+@@ -79,6 +79,13 @@
+ #define A_X116MOUSE_IN         68
+ #define A_X116MOUSE_IGNORE     69
  
 +#ifndef NOSELECT
-+#define A_SEL_SINGLE		70
-+#define A_SEL_ALL		71
-+#define A_SEL_DEL		72
-+#define A_SEL_ONLY		73
++#define A_SEL_SINGLE           70
++#define A_SEL_ALL              71
++#define A_SEL_DEL              72
++#define A_SEL_ONLY             73
 +#endif
 +
- #define	A_INVALID		100
- #define	A_NOACTION		101
- #define	A_UINVALID		102
+ #define A_INVALID              100
+ #define A_NOACTION             101
+ #define A_UINVALID             102
 --- 1/command.c
 +++ 1/command.c
-@@ -20,6 +20,7 @@
+@@ -19,6 +19,7 @@
  #include "position.h"
  #include "option.h"
  #include "cmd.h"
@@ -153,7 +163,7 @@
  
  extern int erase_char, erase2_char, kill_char;
  extern int sigs;
-@@ -978,6 +979,16 @@
+@@ -1245,6 +1246,16 @@
  		if (action != A_PREFIX)
  			cmd_reset();
  
@@ -170,7 +180,7 @@
  		switch (action)
  		{
  		case A_DIGIT:
-@@ -1208,6 +1219,39 @@
+@@ -1493,6 +1504,39 @@
  			dispversion();
  			break;
  
@@ -212,7 +222,7 @@
  			 * Exit.
 --- 1/decode.c
 +++ 1/decode.c
-@@ -78,6 +78,12 @@
+@@ -82,6 +82,12 @@
  	'z',0,				A_F_WINDOW,
  	'w',0,				A_B_WINDOW,
  	ESC,' ',0,			A_FF_SCREEN,
@@ -223,19 +233,19 @@
 +	'.',0,				A_SEL_ONLY,
 +#endif
  	'F',0,				A_F_FOREVER,
+ 	ESC,'F',0,			A_F_UNTIL_HILITE,
  	'R',0,				A_FREPAINT,
- 	'r',0,				A_REPAINT,
 --- 1/edit.c
 +++ 1/edit.c
 @@ -10,6 +10,7 @@
  
- 
  #include "less.h"
+ #include "position.h"
 +#include "select.h"
- 
- public int fd0 = 0;
- 
-@@ -229,6 +230,16 @@
+ #if HAVE_STAT
+ #include <sys/stat.h>
+ #endif
+@@ -266,6 +267,16 @@
  	 * {{ Some stupid implementations of popen() mess up if you do:
  	 *    fA = popen("A"); fB = popen("B"); pclose(fA); pclose(fB); }}
  	 */
@@ -252,9 +262,19 @@
  #if LOGFILE
  	end_logfile();
  #endif
+--- 1/less.h
++++ 1/less.h
+@@ -229,6 +229,7 @@
+ typedef off_t		LINENUM;
+ #define MIN_LINENUM_WIDTH  7	/* Min printing width of a line number */
+ #define MAX_UTF_CHAR_LEN   6	/* Max bytes in one UTF-8 char */
++#define SELECT_WIDTH       6	/* Chars to use for selection number */
+ 
+ #define	NULL_POSITION	((POSITION)(-1))
+ 
 --- 1/less.hlp
 +++ 1/less.hlp
-@@ -25,6 +25,12 @@
+@@ -29,6 +29,12 @@
    r  ^R  ^L            Repaint screen.
    R                    Repaint screen, discarding buffered input.
          ---------------------------------------------------
@@ -267,35 +287,37 @@
          Default "window" is the screen height.
          Default "half-window" is half of the screen height.
   ---------------------------------------------------------------------------
-@@ -187,6 +193,8 @@
+@@ -197,6 +203,10 @@
                    Forward scroll limit.
    -z [_N]  ....  --window=[_N]
                    Set size of window.
 +  -@ [_f_i_l_e] --select=[_f_i_l_e]
 +                  Selection mode.
++  -Z [_f_i_l_e] --select-force=[_f_i_l_e]
++                  Selection mode, unconditionally overwriting.
    -" [_c[_c]]  .  --quotes=[_c[_c]]
                    Set shell quote characters.
    -~  ........  --tilde
 --- 1/less.nro
 +++ 1/less.nro
-@@ -18,6 +18,8 @@
+@@ -19,7 +19,7 @@
  .br
- .B "     [\-T \fItagsfile\fP] [\-x \fItab\fP,...] [\-y \fIlines\fP] [\-[z] \fIlines\fP]"
+ .B "     [\-T \fItagsfile\/\fP] [\-x \fItab\/\fP,...] [\-y \fIlines\/\fP] [\-[z] \fIlines\/\fP]"
  .br
-+.B "     [-@ \fIselect-file\fP]"
-+.br
- .B "     [\-# \fIshift\fP] [+[+]\fIcmd\fP] [\-\-] [\fIfilename\fP]..."
+-.B "     [\-# \fIshift\/\fP] [+[+]\fIcmd\/\fP] [\-\-] [\fIfilename\/\fP]..."
++.B "     [\-# \fIshift\/\fP] [\-{YZ} \fIselect-file\fP] [+[+]\fIcmd\/\fP] [\-\-] [\fIfilename\/\fP]..."
  .br
  (See the OPTIONS section for alternate option syntax with long option names.)
-@@ -360,7 +362,6 @@
- .I less.
+ .
+@@ -404,7 +404,6 @@
+ .IR less .
  .PP
- The following 
+ The following
 -four
  commands may or may not be valid, depending on your particular installation.
- .PP
+ .
  .IP v
-@@ -389,6 +390,15 @@
+@@ -435,6 +434,15 @@
  .IP "s filename"
  Save the input to a file.
  This only works if the input is a pipe, not an ordinary file.
@@ -308,13 +330,13 @@
 +.IP "."
 +In selection-mode (-@): If something is selected, quit. Otherwise select
 +the first line on the screen and quit.
- .PP
+ .
  .SH OPTIONS
  Command line options are described below.
-@@ -800,6 +810,14 @@
- The \-c or \-C option may be used to repaint from the top of
- the screen if desired.
- By default, any forward movement causes scrolling.
+@@ -900,6 +908,17 @@
+ For example, if the screen is 24 lines, \fI\-z\-4\fP sets the
+ scrolling window to 20 lines.  If the screen is resized to 40 lines,
+ the scrolling window automatically changes to 36 lines.
 +.IP "-@\fIfilename\fP or --select=\fIfilename\fP"
 +Causes
 +.I less
@@ -323,50 +345,53 @@
 +If the file already exists,
 +.I less
 +will ask for confirmation before overwriting it.
- .IP "\-[z]\fIn\fP or \-\-window=\fIn\fP"
- Changes the default scrolling window size to \fIn\fP lines.
- The default is one screenful.
++.IP "-Z\fIfilename\fP or --select-force=\fIfilename\fP"
++The -Z option is like -@, but it will overwrite an existing
++file without asking for confirmation.
+ .IP "\-\(dq\fIcc\fP\ or\ \-\-quotes=\fIcc\fP"
+ Changes the filename quoting character.
+ This may be necessary if you are trying to name a file
 --- 1/lesskey.c
 +++ 1/lesskey.c
-@@ -141,6 +141,12 @@
- 	{ "reverse-search",	A_REVERSE_SEARCH },
- 	{ "reverse-search-all",	A_T_REVERSE_SEARCH },
- 	{ "right-scroll",	A_RSHIFT },
+@@ -146,6 +146,12 @@
+ 	{ "reverse-search",       A_REVERSE_SEARCH },
+ 	{ "reverse-search-all",   A_T_REVERSE_SEARCH },
+ 	{ "right-scroll",         A_RSHIFT },
 +#ifndef NOSELECT
-+	{ "select-toggle-one",	A_SEL_SINGLE },
-+	{ "select-toggle-all",	A_SEL_ALL },
-+	{ "select-unselect-all",A_SEL_DEL },
-+	{ "select-only-quit",	A_SEL_ONLY },
++	{ "select-toggle-one",      A_SEL_SINGLE },
++	{ "select-toggle-all",    A_SEL_ALL },
++	{ "select-unselect-all",  A_SEL_DEL },
++	{ "select-only-quit",     A_SEL_ONLY },
 +#endif
- 	{ "set-mark",		A_SETMARK },
- 	{ "shell",		A_SHELL },
- 	{ "status",		A_STAT },
+ 	{ "set-mark",             A_SETMARK },
+ 	{ "set-mark-bottom",      A_SETMARKBOT },
+ 	{ "shell",                A_SHELL },
 --- 1/lesskey.nro
 +++ 1/lesskey.nro
-@@ -166,6 +166,10 @@
- 	r		repaint 
- 	^R		repaint 
- 	^L		repaint 
-+	*		select-toggle-one
-+	a		select-toggle-all
-+	#		select-unselect-all
-+	.		select-only-quit
- 	\eeu		undo-hilite
- 	g		goto-line 
- 	\ekh	goto-line
+@@ -170,6 +170,10 @@
+ r	repaint
+ ^R	repaint
+ ^L	repaint
++*	select-toggle-one
++a	select-toggle-all
++#	select-unselect-all
++.	select-only-quit
+ \eeu	undo-hilite
+ g	goto-line
+ \ekh	goto-line
 --- 1/line.c
 +++ 1/line.c
-@@ -16,6 +16,7 @@
+@@ -14,6 +14,7 @@
   */
  
  #include "less.h"
 +#include "select.h"
  #include "charset.h"
+ #include "position.h"
  
- static char *linebuf = NULL;	/* Buffer which holds the current output line */
-@@ -176,7 +177,11 @@
- 	register LINENUM linenum = 0;
- 	register int i;
+@@ -201,7 +202,11 @@
+ 	LINENUM linenum = 0;
+ 	int i;
  
 +#ifndef NOSELECT
 +	if (doselect || (linenums == OPT_ONPLUS))
@@ -376,9 +401,9 @@
  	{
  		/*
  		 * Get the line number and put it in the current line.
-@@ -203,6 +208,36 @@
- 		curr++;
- 		column++;
+@@ -255,6 +260,38 @@
+ 		add_linebuf(' ', AT_NORMAL, 1);
+ 		lmargin += n + pad + 1;
  	}
 +#ifndef NOSELECT
 +	if(doselect)
@@ -386,44 +411,46 @@
 +		i=selected(linenum);
 +		if (linenums != OPT_ONPLUS)
 +		{
++			column += SELECT_WIDTH;
++			lmargin += SELECT_WIDTH;
 +			if(i)
-+                        {
-+				sprintf(&linebuf[curr], "%*d ", SELECT_WIDTH-1, i);
++			{
++				sprintf(&linebuf[curr], "%*d", SELECT_WIDTH, i);
 +				for (i = 0;  i < SELECT_WIDTH;  i++)
-+					attr[curr++] = AT_BOLD;
++					attr[curr++] = 0;
 +			}
 +			else
-+                        {
-+				column += SELECT_WIDTH;
++			{
 +				for (i = 0;  i < SELECT_WIDTH;  i++)
-+					linebuf[curr] = ' ', attr[curr++] = AT_NORMAL;
++					linebuf[curr] = ' ', attr[curr++] = 0;
 +			}
-+			column += SELECT_WIDTH; lmargin += SELECT_WIDTH;
 +		}
 +		else
 +		{
 +			if(i)
-+				linebuf[curr] = '*', attr[curr++] = AT_BOLD;
++				linebuf[curr] = '*';
 +			else
-+				linebuf[curr] = ' ', attr[curr++] = AT_NORMAL;
-+			column ++; lmargin ++;
++				linebuf[curr] = ' ';
++			attr[curr++] = 0;
++			column ++;
++			lmargin ++;
 +		}
 +	}
 +#endif
  	/*
- 	 * Display the line number at the start of each line
- 	 * if the -N option is set.
+ 	 * Append enough spaces to bring us to the lmargin.
+ 	 */
 --- 1/main.c
 +++ 1/main.c
-@@ -14,6 +14,7 @@
+@@ -13,6 +13,7 @@
   */
  
  #include "less.h"
 +#include "select.h"
  #if MSDOS_COMPILER==WIN32C
+ #define WIN32_LEAN_AND_MEAN
  #include <windows.h>
- #endif
-@@ -370,6 +371,9 @@
+@@ -390,6 +391,9 @@
  		save_status = status;
  	quitting = 1;
  	edit((char*)NULL);
@@ -435,7 +462,7 @@
  		clear_bot();
 --- 1/opttbl.c
 +++ 1/opttbl.c
-@@ -15,6 +15,7 @@
+@@ -14,6 +14,7 @@
  
  #include "less.h"
  #include "option.h"
@@ -443,17 +470,18 @@
  
  /*
   * Variables controlled by command line options.
-@@ -105,6 +106,9 @@
+@@ -115,6 +116,10 @@
  static struct optname X__optname     = { "no-init",              NULL };
  static struct optname y_optname      = { "max-forw-scroll",      NULL };
  static struct optname z_optname      = { "window",               NULL };
 +#ifndef NOSELECT
 +static struct optname at_optname     = { "select",               NULL };
++static struct optname Z_optname      = { "select-force",         NULL };
 +#endif
  static struct optname quote_optname  = { "quotes",               NULL };
  static struct optname tilde_optname  = { "tilde",                NULL };
  static struct optname query_optname  = { "help",                 NULL };
-@@ -389,6 +393,13 @@
+@@ -411,6 +416,18 @@
  			NULL
  		}
  	},
@@ -463,13 +491,18 @@
 +		"Allow to select linenumbers and output them to file: ",
 +		NULL, NULL
 +	},
++	{ 'Z', &Z_optname,
++		STRING, 0, NULL, opt_selecto,
++		"Allow to select linenumbers and output them to file, overwriting: ",
++		NULL, NULL
++	},
 +#endif
- 	{ 'z', &z_optname,
- 		NUMBER, -1, &swindow, NULL,
- 		{
+ 	{ '"', &quote_optname,
+ 		STRING, 0, NULL, opt_quote,
+ 		{ "quotes: ", NULL, NULL }
 --- 1/select.c
 +++ 1/select.c
-@@ -0,0 +1,342 @@
+@@ -0,0 +1,352 @@
 +
 +#ifndef NOSELECT
 +
@@ -485,6 +518,7 @@
 +public int doselect=FALSE;	/* And in the current file, too?      	*/
 +
 +static char *select_file;
++static int force_select_file=FALSE;
 +
 +/* The following variables are somewhat tricky:
 + * There's there problem that a 'toggle_all'-command should toggle also that
@@ -650,7 +684,7 @@
 +	struct scrpos scrposs;
 +
 +	/*pos=position(TOP);*/
-+	get_scrpos(&scrposs);
++	get_scrpos(&scrposs, TOP);
 +	pos=scrposs.pos;
 +	for(i=0 ;; )
 +	{
@@ -711,10 +745,10 @@
 +	 * Decide whether to overwrite the select-file.
 +	 * If it doesn't exist we "overwrite" it.
 +	 */
-+	if (!exists)
++	if (force_select_file || (!exists))
 +	{
 +		/*
-+		 * Overwrite (or create) the select-file.
++		 * Overwrite (or create) the log file.
 +		 */
 +		answer = 'O';
 +	} else
@@ -797,7 +831,7 @@
 +		select_option=TRUE;
 +		break;
 +	case TOGGLE:
-+		error("Selection-mode cannot be toggled", NULL_PARG);
++		error("Selection-mode can not be toggled", NULL_PARG);
 +		break;
 +	case QUERY:
 +		if (!select_option)
@@ -811,14 +845,21 @@
 +	}
 +}
 +
++	public void
++opt_selecto(type, s)
++	int type;
++	char *s;
++{
++	force_select_file=TRUE;
++	opt_select(type, s);
++}
++
 +#endif
 --- 1/select.h
 +++ 1/select.h
-@@ -0,0 +1,21 @@
+@@ -0,0 +1,17 @@
 +
 +#ifndef NOSELECT
-+
-+#define SELECT_WIDTH    6       /* Chars to use for selection number         */
 +
 +extern int select_option;	/* Is selection-option activated?            */
 +extern int doselect;		/* And in the current file, too?             */
@@ -832,7 +873,5 @@
 +public void select_write ();
 +public void opt_select ();
 +public void opt_selecto ();
-+
-+
 +
 +#endif
